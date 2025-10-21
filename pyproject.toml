@@ -1,0 +1,34 @@
+[project]
+name = "timeseries"
+version = "0.1.0"
+description = "Time Series Analysis for MVA course"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jupyter>=1.1.1",
+    "matplotlib>=3.9.3",
+    "numba>=0.61.0",
+    "numpy>=2.1.3",
+    "pytest>=8.3.5",
+    "ruff>=0.8.2",
+    "scipy>=1.16.2",
+    "tach>=0.16.3",
+    "tensorflow>=2.14.0",
+    "torch>=2.9.0",
+]
+
+
+
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {} # you can write inside the brackets something like "Model1" = "models/model1/", "Model2" = "models/model2/"
+packages = [] # same, smth like ["Model1", "Model2"]
+
+
+
+[tool.setuptools.package-data]
+"*" = ["*.py", "*.pyi", "*.c", "*.h", "*.cpp", "*.hpp"]
