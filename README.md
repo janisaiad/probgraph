@@ -1,7 +1,8 @@
 # Project Name
 
-## Description
-A clear and concise description of what this project does and what it is for.
+To get started, just run `./launch.sh`.
+
+
 
 ## Table of Contents
 - [Installation](#installation)
