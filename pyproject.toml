@@ -1,7 +1,7 @@
 [project]
-name = "timeseries"
+name = "probgraph"
 version = "0.1.0"
-description = "Time Series Analysis for MVA course"
+description = "Probabilistic Graphical Models for MVA course"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -31,8 +31,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-package-dir = {} # you can write inside the brackets something like "Model1" = "models/model1/", "Model2" = "models/model2/"
-packages = [] # same, smth like ["Model1", "Model2"]
+package-dir = {stochasticinterpolants = "refs/former_code/stochastic_interpolants", dsbm = "refs/former_code/dsbm"} # you can write inside the brackets something like "Model1" = "models/model1/", "Model2" = "models/model2/"
+packages = ["stochasticinterpolants", "dsbm"] # same, smth like ["Model1", "Model2"]
 
 
 
