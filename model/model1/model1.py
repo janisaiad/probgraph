@@ -1,6 +1,6 @@
-import numpy as np
-import tensorflow as tf
-
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 class Model1:
     def __init__(self, n_layers: int, n_neurons: int, n_outputs: int):
