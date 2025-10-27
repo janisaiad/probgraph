@@ -1,6 +1,0 @@
-[submodule "refs/former_code/stochastic_interpolants"]
-	path = refs/former_code/stochastic_interpolants
-	url = https://github.com/malbergo/stochastic-interpolants.git
-[submodule "refs/former_code/dsbm"]
-	path = refs/former_code/dsbm
-	url = https://github.com/yuyang-shi/dsbm-pytorch.git
