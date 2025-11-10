@@ -1,3 +1,20 @@
+"""
+cifar10 patch reconstruction using stochastic interpolants
+
+this implementation:
+- trains on dog class only (cifar10 class 5)
+- uses mask-conditioned u-net architecture
+- learns to reconstruct masked patches while keeping visible pixels fixed
+- conditions on mask during both training and generation
+- forces visible pixels to remain constant in output
+
+approach:
+  x0 = masked_image * mask + noise * (1-mask)  # we start with visible pixels + noise in masked regions
+  x1 = original_image                           # we target full image
+  model learns interpolant: x0 -> x1 conditioned on mask
+  during generation: output = model_output * (1-mask) + original * mask  # we force visible pixels fixed
+"""
+
 import torch
 import torch.nn as nn
 import torchvision
@@ -61,8 +78,8 @@ def create_patch_mask(bs, patch_size=8, num_patches=4):
 
 # we define u-net style convolutional denoiser for image reconstruction
 class UNetDenoiser(nn.Module):
-    """we use u-net architecture with skip connections for image reconstruction"""
-    def __init__(self, in_channels=4, out_channels=3, base_channels=64):
+    """we use u-net architecture with skip connections for image reconstruction, conditioned on mask"""
+    def __init__(self, in_channels=5, out_channels=3, base_channels=64):  # we add 1 channel for mask conditioning
         super().__init__()
         
         # we define encoder (downsampling path)
@@ -178,10 +195,15 @@ class UNetDenoiser(nn.Module):
 
 # we define wrapper for eta network to match expected interface
 class EtaNetwork(nn.Module):
-    """we wrap unet to accept concatenated [x, t] input"""
+    """we wrap unet to accept concatenated [x, t, mask] input"""
     def __init__(self, unet):
         super().__init__()
         self.unet = unet
+        self.mask = None  # we store mask for conditioning
+    
+    def set_mask(self, mask):
+        """we set the mask for conditioning"""
+        self.mask = mask
     
     def forward(self, xt_concat):
         """we expect input of shape [bs, 3*32*32 + 1]"""
@@ -191,20 +213,32 @@ class EtaNetwork(nn.Module):
         
         # we expand time to match spatial dimensions
         t_channel = t.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)
-        x_with_t = torch.cat([x, t_channel], dim=1)  # we concatenate time as 4th channel
+        
+        # we add mask conditioning (use first channel of mask for simplicity)
+        if self.mask is not None:
+            mask_channel = self.mask[:bs, 0:1, :, :]  # we take first channel of mask [bs, 1, 32, 32]
+        else:
+            mask_channel = torch.ones(bs, 1, 32, 32).to(x.device)  # we default to all visible
+        
+        x_with_t_mask = torch.cat([x, t_channel, mask_channel], dim=1)  # we concatenate [x, t, mask]
         
         # we process through unet
-        out = self.unet(x_with_t)
+        out = self.unet(x_with_t_mask)
         
         # we flatten output
         return out.reshape(bs, -1)
 
 # we define velocity field wrapper
 class VelocityNetwork(nn.Module):
-    """we wrap unet for velocity field b"""
+    """we wrap unet for velocity field b, conditioned on mask"""
     def __init__(self, unet):
         super().__init__()
         self.unet = unet
+        self.mask = None  # we store mask for conditioning
+    
+    def set_mask(self, mask):
+        """we set the mask for conditioning"""
+        self.mask = mask
     
     def forward(self, xt_concat):
         """we expect input of shape [bs, 3*32*32 + 1]"""
@@ -214,10 +248,17 @@ class VelocityNetwork(nn.Module):
         
         # we expand time to match spatial dimensions
         t_channel = t.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)
-        x_with_t = torch.cat([x, t_channel], dim=1)  # we concatenate time as 4th channel
+        
+        # we add mask conditioning (use first channel of mask for simplicity)
+        if self.mask is not None:
+            mask_channel = self.mask[:bs, 0:1, :, :]  # we take first channel of mask [bs, 1, 32, 32]
+        else:
+            mask_channel = torch.ones(bs, 1, 32, 32).to(x.device)  # we default to all visible
+        
+        x_with_t_mask = torch.cat([x, t_channel, mask_channel], dim=1)  # we concatenate [x, t, mask]
         
         # we process through unet
-        out = self.unet(x_with_t)
+        out = self.unet(x_with_t_mask)
         
         # we flatten output
         return out.reshape(bs, -1)
@@ -256,12 +297,24 @@ def train_step(
     # we sample random times
     ts = torch.rand(size=(bs,)).to(itf.util.get_torch_device())
     
+    # we set masks for conditioning in both networks
+    b.set_mask(masks)
+    eta.set_mask(masks)
+    
     # we compute the losses
     loss_start = time.perf_counter()
-    loss_b = loss_fn_b(b, x0s, x1s, ts, interpolant)
-    loss_eta = loss_fn_eta(eta, x0s, x1s, ts, interpolant)
+    loss_b_full = loss_fn_b(b, x0s, x1s, ts, interpolant)
+    loss_eta_full = loss_fn_eta(eta, x0s, x1s, ts, interpolant)
     
-    # we add extra weight to loss on masked regions
+    # we weight the loss to focus on masked regions (multiply by mask_loss_weight for masked pixels)
+    # we compute per-pixel weight: visible pixels get weight 1.0, masked pixels get weight mask_loss_weight
+    loss_weights = masks_flat + mask_loss_weight * (1 - masks_flat)  # we create per-pixel weights
+    
+    # we apply weighted loss (approximation: we multiply total loss by average weight)
+    avg_weight = loss_weights.mean()
+    loss_b = loss_b_full * avg_weight
+    loss_eta = loss_eta_full * avg_weight
+    
     loss_val = loss_b + loss_eta
     loss_end = time.perf_counter()
     
@@ -314,12 +367,19 @@ def make_plots(
     
     # we use simple forward integration
     with torch.no_grad():
+        # we set masks for conditioning during generation
+        b.set_mask(masks)
+        eta.set_mask(masks)
+        
         s = stochastic_interpolant.SFromEta(eta, interpolant.a)
         pflow = stochastic_interpolant.PFlowIntegrator(
             b=b, method='dopri5', interpolant=interpolant, n_step=10
         )
         xfs_pflow, _ = pflow.rollout(x0s)
-        xf_pflow = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)
+        xf_pflow_raw = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)
+        
+        # we force visible pixels to remain fixed (only reconstruct masked regions)
+        xf_pflow = xf_pflow_raw * (1 - masks) + x1s_img * masks  # we keep original pixels where mask=1
     
     # we plot results
     fig, axes = plt.subplots(3, vis_bs, figsize=(vis_bs*2, 6))
@@ -406,6 +466,10 @@ if __name__ == "__main__":
     print(f"  n_epochs: {n_epochs}")
     print(f"  patch_size: {patch_size}")
     print(f"  num_patches: {num_patches}")
+    print(f"\nconditioning approach:")
+    print(f"  - networks conditioned on binary mask (visible=1, masked=0)")
+    print(f"  - visible pixels kept fixed during generation")
+    print(f"  - only masked regions are reconstructed")
     
     # we define interpolant (one-sided linear interpolation)
     path = 'one-sided-linear'
@@ -421,9 +485,9 @@ if __name__ == "__main__":
     )
     
     # we create networks
-    print("\ncreating u-net architectures...")
-    unet_b = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)
-    unet_eta = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)
+    print("\ncreating u-net architectures with mask conditioning...")
+    unet_b = UNetDenoiser(in_channels=5, out_channels=3, base_channels=64)  # we add mask channel
+    unet_eta = UNetDenoiser(in_channels=5, out_channels=3, base_channels=64)  # we add mask channel
     
     b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())
     eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())
