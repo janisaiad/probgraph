@@ -1,19 +1,34 @@
-"""
-cifar10 patch reconstruction using stochastic interpolants
+# ---
+# jupyter:
+#   jupytext:
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.18.1
+#   kernelspec:
+#     display_name: python3
+#     language: python
+#     name: python3
+# ---
 
-this implementation:
-- trains on dog class only (cifar10 class 5)
-- uses mask-conditioned u-net architecture
-- learns to reconstruct masked patches while keeping visible pixels fixed
-- conditions on mask during both training and generation
-- forces visible pixels to remain constant in output
+# %% [markdown]
+# cifar10 patch reconstruction using stochastic interpolants
+#
+# this implementation:
+# - trains on dog class only (cifar10 class 5)
+# - uses mask-conditioned u-net architecture
+# - learns to reconstruct masked patches while keeping visible pixels fixed
+# - conditions on mask during both training and generation
+# - forces visible pixels to remain constant in output
+#
+# approach:
+#   x0 = masked_image * mask + noise * (1-mask)  # we start with visible pixels + noise in masked regions
+#   x1 = original_image                           # we target full image
+#   model learns interpolant: x0 -> x1 conditioned on mask
+#   during generation: output = model_output * (1-mask) + original * mask  # we force visible pixels fixed
 
-approach:
-  x0 = masked_image * mask + noise * (1-mask)  # we start with visible pixels + noise in masked regions
-  x1 = original_image                           # we target full image
-  model learns interpolant: x0 -> x1 conditioned on mask
-  during generation: output = model_output * (1-mask) + original * mask  # we force visible pixels fixed
-"""
+# %%
 
 import torch
 import torch.nn as nn
@@ -38,12 +53,18 @@ print(itf.util.get_torch_device())
 
 print("torch version:", torch.__version__)
 
+# %% [markdown]
 # we define utility functions
+
+# %%
 def grab(var):
     """we take a tensor off the gpu and convert it to a numpy array on the cpu"""
     return var.detach().cpu().numpy()
 
+# %% [markdown]
 # we load cifar10 dataset
+
+# %%
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -76,7 +97,10 @@ def create_patch_mask(bs, patch_size=8, num_patches=4):
             mask[i, :, x:x+patch_size, y:y+patch_size] = 0  # we mask the patch
     return mask.to(itf.util.get_torch_device())
 
+# %% [markdown]
 # we define u-net style convolutional denoiser for image reconstruction
+
+# %%
 class UNetDenoiser(nn.Module):
     """we use u-net architecture with skip connections for image reconstruction, conditioned on mask"""
     def __init__(self, in_channels=5, out_channels=3, base_channels=64):  # we add 1 channel for mask conditioning
@@ -193,7 +217,10 @@ class UNetDenoiser(nn.Module):
         out = self.final(d1)
         return out
 
+# %% [markdown]
 # we define wrapper for eta network to match expected interface
+
+# %%
 class EtaNetwork(nn.Module):
     """we wrap unet to accept concatenated [x, t, mask] input"""
     def __init__(self, unet):
@@ -263,7 +290,10 @@ class VelocityNetwork(nn.Module):
         # we flatten output
         return out.reshape(bs, -1)
 
+# %% [markdown]
 # we define training step function
+
+# %%
 def train_step(
     bs: int,
     interpolant: stochastic_interpolant.Interpolant,
@@ -339,7 +369,10 @@ def train_step(
     
     return loss_val.detach(), loss_b.detach(), loss_eta.detach(), b_grad.detach(), eta_grad.detach()
 
+# %% [markdown]
 # we define visualization function
+
+# %%
 def make_plots(
     b: torch.nn.Module,
     eta: torch.nn.Module,
@@ -448,7 +481,10 @@ def make_plots(
     plt.savefig(f'dog_training_curves_epoch_{counter}.png', dpi=150, bbox_inches='tight')
     plt.show()
 
+# %% [markdown]
 # we define main training setup
+
+# %%
 if __name__ == "__main__":
     # we set hyperparameters
     base_lr = 1e-4
