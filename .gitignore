@@ -39,3 +39,6 @@ pip-wheel-metadata/
 
 data/*
 *.pt
+*.gz
+*.npy
+*.npz
