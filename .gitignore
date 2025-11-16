@@ -37,3 +37,6 @@ pip-wheel-metadata/
 .venv/
 
 
+*.pt
+*.gz
+*batch*
