@@ -149,117 +149,9 @@ Avant les travaux de Song et Ermon, cette tâche était principalement effectué
 
 
 
-
-
-\section{Pourquoi ajouter de la stochasticité ?}
-
-\section{Le score matching a bien fait de l'ajouter car biais inductif + naturel}
-
-Passer de flow matching à diffusion models n'est pas juste une généralisation hasardueuse, mapper une distribution vers une autre sans aspect probabiliste c'est du flow matching, le calcul stochastique nous dit que le flow matching est inclut dans toute une classe de variation probabiliste, qui transforme le probleme de sampling ODE déterministe vers un problème de MCMC langevin.
-
-L'ajout de cette stochasticité rend la transformation image - gaussienne beaucoup plus naturelle (en fait c'est la bonne généralisation d'ajouter du bruit gaussien d'un point de vue transport optimal) 
-
-Il se trouve qu'en écrivant l'équation backward on peut estimer le transport gaussienne - image SANS avoir accès à toutes les distributions p_theta, c'est le début de l'estimation du score direct sans passer par le gradient de la distribution. 
-
-L'usage du score au lieu de la parametrisation directe de la distribution (example une mixture de gaussienne) n'est pas qu'un artefact d'analyse numérique qui permet de mapper les queues de distributions en 0 vers -inf, c'est le score qui est l'unique valeur necessaire pour sampler une image.
-
-
-Apporter de la stochasticité a aussi un autre effet désirable, celui de régularisation de la qualité des images.
-Un flow matching mal appris va transformer une image vers une version ou les details peuvent etre mal appris.
-
-Le debruitage successif etant le biais inductif du modele (c'est à dire ce que le modèle fait de mieux en terme conceptuel), notre image finale a tout simplement moins de bruit, parce que l'on débruite.
-
-Ceci s'explique très bien lorsque l'on écrit les équations de transport
-
-d'un cote on a l'equation de la chaleur et de l'autre une equation de transport classique ; puisque l'equation de la chaleur forward rend les distributions + smooth, en inversant la fleche du temps, l'equation de la chaleur backward a naturellement une tendance à créer des pics dans la distribution,x
-
-
-
-Ceci était le chemin conceptuel qui a leadé de 2015 à  2022,
-
-Cependant, la plupart des taches d'IA n'étant pas seulement celle d'IA generative, certains problemes classiques en computational sciences ont commencé à etre ré-interprété comme des sous instances de problemes de transport (exemple du color impainting, changement de colorimétrie) ou changement de genre et de style sur des images , Ces problemes etaient auparavants traités sous l'angle du transport optimal qui donnait un cadre mathématique précis.
-Ce cadre n'est pas unique, il est possible de passer d'une distribution à une autre avec autre chose qu'un plan de transport complexe a calculer, et c'est l'enjeu de la généralisation vers les stochastic interpolants
-
-
-"emma 21 shows that it is insufficient in general to match ˆ b with b to obtain control on
-the KL divergence. The essence of the problem is that a small error in ˆ b− b does not ensure
-18
-Stochastic Interpolants
-control on the Fisher divergence FI(ρ(t) ∥ ˆρ(t)) = Rd 
-|∇logρ(t,x) − ∇log ˆρ(t,x)|2 ρ(t,x)dx,
-which is necessary due to the presence of (∇log ˆρ− ∇logρ) in""" ceci explique pourquoi il faut faire + que du flow matching, on ne controle pas ce qui se passe quand on prend juste b en flow matching
-
-
-\subsection{ce qu'apporte les stochastic interpolants}
-
-Passer d'une distribution gaussienne à image n'est pas souhaitable dans ces cas là, on veut passer d'une image de singe bleu à une image de singe vert. On peut faire un transport optimal dans l'espace colorimétrique.
-
-cependant le cout computationnel sur de grandes images est rhédibitoire, le plan de transport atteignant 10**12 valeurs pour une image 1024*1024
-
-
-c'est ce que stochatisc interpolants tente de résoudre en Apprenant à faire du transport de distribution de manière générale. Il ne s'agit pas forcément de passer par un 
-
-La encore le flow matching répond à cette question de manière naturelle, mais pour de la colorimétrie la structure de l'image DOIT etre respectée (pétale, fleur, pistil dans le papier);
-
-ce sont les détails qui comptent, et le flow matching n'excelle pas dans les détails. En revanche le biais inductif d'une équation de transport n'est intéressant que dans un sens, et pour du color impainting on a besoin des 2 côtés d'avoir ce biais inductif, ce qui est un peu complexe avec une equation de la chaleur qui n'a qu'un sens
-
-remark 20 : This
-is all that matters when applying these processes as generative models. However, the fact that
-these processes are different has implications for the accuracy of the numerical integration
-used to sample from them at any t as well as for the propagation of statistical errors (see
-also the next remark)
-
-
-
-Le genie des stochastic interpolants vient dans l'interpretation que l'equation de la chaleur provient de la SDE, mais cette SDE en l'intégrant nous donne un barycentre exponentiel entre image initiale et gaussienne z = somme (zi)/n (somme de gaussienne = gaussienene), mais écrire ça revient à se replacer dans le flow matching
-
-
-Remark 11 If we set γ(t) = 0 in xt (i.e, if we remove the latent variable), the stochastic
-interpolant (2.1) reduces to the one originally considered in Albergo and Vanden-Eijnden
-(2023). In this setup, the results above formally stand except that we cannot guarantee the
-spatial regularity of b(t,x) and s(t,x), since it relies on the presence of the latent variable (as
-shown in the proof of Theorem 6). Hence, we expect the introduction of the latent variable
-γ(t)z to help for generative modeling, where the solution to the corresponding ODEs/SDEs
-will be better behaved, and for statistical approximation, since the targets b and s will be
-more regular. We will see in Section 6 that it also gives us much greater flexibility in the
-way we can bridge ρ0 and ρ1, which will enable us to design generative models with appealing
-properties
-
-
-conclusion il y a un compromis entre l'écriture compressée du flow matching qui est moins précise apres discretization (puisque l'on discretise rien en fait on apprend x1-x0) sur les détails et l'écriture super précise du diffusion model mais qui n'est valable que pour gaussienne into image
-
-conclusion et si on faisait image into un peu gaussienne into image2 ! c'est de là que vient les stochastic interpolants, on essaye de récuperer ce qui fonctionne dans les 2 parties : une ecriture compressée qui necessite la connaisasnce d'une seule distirbution en plus (gaussienne) et le sampling sur les détails hyper précis d'un diffusion model
-
-
-Remark 12 We will see in Section 2.4 that the forward and backward FPE in (2.20) and
-(2.22) are more robust than the TE in (2.9) against approximation errors in the velocity
-b and the score s, which has practical implications for generative models based on these
-equations
-
-
-
-en introduisant cette 3eme distribution au milieu, on se place dans le cadre du stochastic interpolants
-
-
-il se trouve, et c'est une magie , si l'on écrit un ansatz de superposition brownian bridge + transport (xd
-t=I(t,x0,x1)+Nt (2.6)
-whereN: [0,1]→Rd isazero-meanGaussianstochasticprocessconstrainedtosatisfy
-Nt=0=Nt=1=0.) 
-
-alors on peut apprendre I via le vecteur vitesse de la neural ODE b et une stochasticité arbitraire modélisée par eps, on peut se permettre de choisir une stochasticité optimale ! c'est là l'utilité des stochastic interpolants !
-
-
-
-il faut bien comprendre que l'on apprend b et s, mais qu'on fait l'inference à epsilon quelconque
-
-
-Attention le choix de epsilon optimal n'est pas trivial, on a une upper bound qui nous sert si on la mimimize qui donne l'quation 2.49 mais en génral on ne sait pas, il faut faire du trial and error ou le porter en connaissance fondaamentale
-
-conclusion : on va faire des experiences sur cet epsilon optimal 
-
-
-
-
+When learning a denoiser ηz, we found it beneficial to complete the image generation
+with a final denoising step, in which we set ϵ = 0 and switch the integrator to the one given
+in (5.14)
 
 
 
@@ -277,14 +169,71 @@ j'ai eu boffi en seminaire qui m'a dit que choisir le epsilon optimal est import
 
 
 
+\paragraph{Remarks extracted from the paper.}
+We remarked in Section 6.1 that learning the denoiser $\eta_z$ is more numerically stable than learning the score $s$ directly. Our results suggest that learning the denoiser is best practice.
+
+The factor of $\alpha(t)^{-1}$ in the final term of the SDE could pose numerical problems at $t = 1$, as $\alpha(1) = 0$. As discussed in the paragraph above, a choice of $\epsilon(t)$ which is such that $\epsilon(t)/\alpha(t) \to C$ for some constant $C$ as $t \to 1$ avoids any issue.
+
+Their diversity increases as we increase the diffusion coefficient $\epsilon$.
+
+Moreover, we find that learning $b$ generically performs better than learning $v$, and that learning $\eta$ generically performs better than learning $s$ (except when $\epsilon$ is taken large enough that performance starts to degrade).
+
+Taken together with Figure 9, these results demonstrate qualitatively that small values of $\epsilon$ tend to over-estimate the density within the modes and under-estimate the density in the tails. Conversely, when $\epsilon$ is taken too large, the model tends to under-estimate the modes and over-estimate the tails.
 
 
 
+Later, inSection5.1,wediscusshowtorecastscore-baseddiffusion
+models(SBDM)as linearone-sidedinterpolants,
 
 
+
+, we highlight that there is a much broader space of possible
+designs that may be relevant for future applications. Several candidate application domains
+include the solution of inverse problems such as image inpainting and super-resolution,
+spatiotemporal forecasting of dynamical systems, and scientific problems such as sampling
+of molecular configurations and machine learning-assisted Markov chain Monte-Carlo
+
+
+
+Theorem (41) gives a practical route towards solving
+the Schr¨odinger bridge problem with stochastic interpolants, and we leave the numerical
+investigation of this formulation to future work.
+
+
+
+Figure 5: The effect of ϵ on sample trajectories
+
+
+tester la variabilité des 3 : linear 1−t t at(1−t)
+trig cosπ
+2t sinπ
+2t at(1−t)
+enc-dec cos2(πt)1[0,1
+2)(t) cos2(πt)1(1
+2,1](t) sin2(πt
+
+
+By contrast, the diffusion coefficient ϵ(t) leaves the density ρ(t) unchanged, and only
+affects the way we sample it.
+
+In particular, the probability flow ODE (2.32) results in a
+map that pushes every Xt=0 = x0 onto a single Xt=1 = x1 and vice-versa. The forward
+SDE (2.33) maps each XF
+t=0 = x0 onto an ensemble XF
+t=1 whose spread is controlled by the
+amplitude of ϵ(t) (and similarly for the reversed SDE (2.34) that maps each XB
+t=1 = x1
+onto an ensemble XB
+t=0).
+
+As ϵ increases but γ stays the same, the density
+ρ(t) is unchanged, but the individual trajectories become increasingly stochastic. While
+all choices are equivalent with exact b and s, Theorem 23 shows that nonzero values of ϵ
+provide control on the likelihood in terms of the error in b and s when they are approximate.
 
 (on va faire des experiences sur cet epsilon optimal pour montrer direct combien de sous ça fait gagner)
-
+(personnaly trigonometric son figure 5 appears more appealing trigonometric
+)
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{references}
