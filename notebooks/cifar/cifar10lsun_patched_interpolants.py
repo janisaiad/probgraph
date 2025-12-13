@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
+import urllib.request  # we import urllib to download lsun if needed
+import zipfile  # we import zipfile to extract lsun archives
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -27,6 +29,28 @@ def grab(var):
     """we take a tensor off the gpu and convert it to a numpy array on the cpu"""
     return var.detach().cpu().numpy()
 
+def ensure_lsun_bedroom(lsun_root: str) -> None:
+    """we download and extract lsun bedroom_train_lmdb if missing"""  # we document lsun helper
+    bedroom_lmdb_dir = os.path.join(lsun_root, "bedroom_train_lmdb")  # we build expected lmdb directory
+    if os.path.isdir(bedroom_lmdb_dir):  # we check if directory already exists
+        print(f"found existing lsun bedroom_train_lmdb at {bedroom_lmdb_dir}")  # we log existing dataset
+        return  # we skip download when present
+    
+    os.makedirs(lsun_root, exist_ok=True)  # we ensure root directory exists
+    url = "https://dl.yf.io/lsun/scenes/bedroom_train_lmdb.zip"  # we set official lsun download url
+    zip_path = os.path.join(lsun_root, "bedroom_train_lmdb.zip")  # we choose local zip path
+    
+    print(f"downloading lsun bedroom_train_lmdb from {url} to {zip_path} ...")  # we log download start
+    urllib.request.urlretrieve(url, zip_path)  # we download zip archive
+    print("download complete, extracting archive...")  # we log extraction start
+    
+    with zipfile.ZipFile(zip_path, "r") as zf:  # we open zip file
+        zf.extractall(lsun_root)  # we extract all contents into root
+    
+    os.remove(zip_path)  # we remove zip file after extraction
+    print(f"lsun bedroom_train_lmdb extracted to {bedroom_lmdb_dir}")  # we log extraction location
+
+
 # we load lsun dataset (bedroom class)
 transform = transforms.Compose([
     transforms.Resize((32, 32)),  # we resize lsun images to 32x32
@@ -34,8 +58,11 @@ transform = transforms.Compose([
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize channels
 ])
 
+lsun_root = "../../data/lsun"  # we set lsun root directory
+ensure_lsun_bedroom(lsun_root)  # we ensure lsun bedroom lmdb exists
+
 trainset = torchvision.datasets.LSUN(
-    root="../../data/lsun",  # we set lsun root directory
+    root=lsun_root,  # we set lsun root directory
     classes=["bedroom_train"],  # we use bedroom training subset
     transform=transform  # we apply preprocessing transforms
 )
