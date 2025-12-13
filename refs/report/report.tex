@@ -1,0 +1,164 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage[margin=1in]{geometry}
+
+\title{Mask-Conditioned Stochastic Interpolants for Patch Inpainting on CIFAR-10 (Dogs)}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study mask-conditioned image inpainting on CIFAR-10 (class ``dog'') using stochastic interpolants and flow matching. At each training step, we sample a binary mask to designate visible pixels and replace masked pixels with Gaussian noise to form the starting state. A time-dependent velocity field $b_\theta(x,t,m)$ is learned along a designed linear interpolant from the masked-noisy state to the ground-truth image. At generation time, we integrate the Probability Flow ODE and finally overwrite the visible pixels with their original values so that only masked regions change. We document data, conditioning, equations, architecture, training, sampling, dimensions, and parameter counts.
+\end{abstract}
+
+\section{Data and preprocessing}
+\paragraph{Dataset.} CIFAR-10 (train split), filtered to class 5 (``dog'') only, yielding $5000$ images (out of $50000$). Images are in \(\mathbb{R}^{3\times 32\times 32}\).
+
+\paragraph{Normalization.} Each image is converted with \texttt{ToTensor} and normalized using mean \((0.5,0.5,0.5)\) and std \((0.5,0.5,0.5)\). Values are centered near \(0\) and lie roughly in \([-1,1]\).
+
+\paragraph{Per-step sampling.} At every training step:
+\begin{itemize}[leftmargin=1.25em]
+  \item we sample a batch of size \(\texttt{batch\_size}=32\) from the 5000 dogs (i.i.d. random indices),
+  \item we sample a binary mask \(m\in\{0,1\}^{3\times 32\times 32}\) by placing \(\texttt{num\_patches}=4\) square patches of size \(\texttt{patch\_size}=8\) to zero (1 = visible, 0 = masked),
+  \item we sample i.i.d. noise \(\xi \sim \mathcal{N}(0,I)\) (same shape as the image).
+\end{itemize}
+The mask is identical across the 3 color channels (replicated by construction). For network conditioning, only the first mask channel is used as a binary map, see Sec.~\ref{sec:architecture}.
+
+\section{Problem and variables}
+We denote \(x_1 \sim p_{\text{data}}\) the target (dog) image, \(m\) the binary mask, and \(\xi \sim \mathcal{N}(0,I)\) the i.i.d. noise. The inpainting initial state is
+\[
+  x_0 \;=\; m \odot x_1 \;+\; (1-m)\odot \xi,
+\]
+where \(\odot\) denotes the Hadamard product. The time \(t \sim \mathcal{U}([0,1])\) is sampled independently.
+
+\section{Interpolant and target dynamics}
+We use a \emph{one-sided linear} interpolant between \(x_0\) and \(x_1\):
+\[
+  x_t \;=\; (1-t)\,x_0 \;+\; t\,x_1,\qquad t\in[0,1],
+\]
+whose pathwise derivative is constant:
+\[
+  \dot{x}_t \;=\; x_1 - x_0.
+\]
+Flow matching learns a time-dependent velocity field \(b_\theta(x,t,m)\) matching this target derivative along the interpolant. An auxiliary term \(\eta_\phi\) is also trained (within \texttt{interflow}) for the shared stochastic interpolant.
+
+\section{Training objectives}
+We train two networks: \(b_\theta\) (drift/velocity) and \(\eta_\phi\) (auxiliary). The \texttt{interflow} losses are \texttt{one-sided-b} and \texttt{one-sided-eta} with a shared interpolant:
+\begin{align*}
+  \mathcal{L}_{b}(\theta)
+  \;&=\; \mathbb{E}_{x_1,\xi,m,t}\Big[
+      w(m)\,\big\|\, b_\theta(x_t, t, m) - (x_1 - x_0) \big\|_2^2
+  \Big],\\
+  \mathcal{L}_{\eta}(\phi)
+  \;&=\; \text{(auxiliary one-sided-eta term defined by the interpolant)}.
+\end{align*}
+Mask reweighting emphasizes masked regions:
+\[
+  w(m) \;\propto\; m \;+\; \lambda\,(1-m),\qquad \lambda=\texttt{mask\_loss\_weight}=10.0.
+\]
+In practice, we apply the efficient approximation \(\mathcal{L}\leftarrow \bar{w}\cdot \mathcal{L}\) where \(\bar{w}\) is the per-batch mean of per-pixel weights.
+
+\section{Network architecture}
+\label{sec:architecture}
+\paragraph{Backbone.} Two 2D U-Nets (same shape) with GroupNorm and base channels \(64\). Encoder path with 3 levels (stride 2), bottleneck, and symmetric decoder with skip connections.
+
+\paragraph{Explicit conditioning.} Each U-Net sees 5 channels:
+\[
+  \underbrace{3}_{\text{image}} \;+\; \underbrace{1}_{\text{time } t} \;+\; \underbrace{1}_{\text{mask } m}
+\;=\; 5.
+\]
+The scalar time \(t\) is broadcast spatially to a constant \(32\times 32\) map. For the mask, only its first channel \([1\times 32\times 32]\) is concatenated (the mask image is built with 3 identical channels for convenience).
+
+\paragraph{Wrappers and I/O.} We operate in vector space with
+\[
+  d \;=\; 3\times 32\times 32 \;=\; 3072.
+\]
+The wrappers reshape the flattened input to \(x\in \mathbb{R}^{3\times 32\times 32}\), concatenate the \(t\) and \(m\) maps to form a \([5\times 32\times 32]\) tensor, and feed the U-Net. The output is \([3\times 32\times 32]\), flattened back to \(\mathbb{R}^{3072}\).
+
+\paragraph{Parameter counts.} For \(\texttt{in\_channels}=5\), \(\texttt{out\_channels}=3\), \(\texttt{base\_channels}=64\):
+\begin{itemize}[leftmargin=1.25em]
+  \item \(b_\theta\) network: \(\approx 8{,}565{,}315\) parameters,
+  \item \(\eta_\phi\) network: \(\approx 8{,}565{,}315\) parameters,
+  \item total: \(\approx 17{,}130{,}630\) trainable parameters.
+\end{itemize}
+
+\section{Training procedure}
+\paragraph{Loop.} At each step:
+\begin{enumerate}[leftmargin=1.25em]
+  \item sample a batch of dog images and a fresh mask per image;
+  \item form \(x_0 = m\odot x_1 + (1-m)\odot \xi\); flatten \(x_0,x_1\) to \(\mathbb{R}^{3072}\);
+  \item sample \(t\sim\mathcal{U}([0,1])\);
+  \item pass \(m\) into the wrappers (explicit conditioning) and compute \(\mathcal{L}_b,\mathcal{L}_\eta\) (one-sided scheme);
+  \item apply \(\bar{w}\) scaling (focus on masked pixels), backprop, optimizer step, scheduler step.
+\end{enumerate}
+
+\paragraph{Optimization.} Adam with \(\texttt{lr}=10^{-4}\). CosineAnnealingLR with \(T_{\max}=\texttt{n\_epochs}=5000\), \(\eta_{\min}=10^{-6}\). No gradient clipping is applied (we log gradient norms).
+
+\paragraph{Logging and stopping.} Losses, gradient norms, and LR are logged every \(\texttt{metrics\_freq}=100\) iterations. Plots and checkpoints are saved every \(\texttt{plot\_freq}=500\). Training stops after a fixed budget \(\texttt{n\_epochs}=5000\) (no validation/early stopping).
+
+\section{Generation (inpainting)}
+We integrate the Probability Flow ODE:
+\[
+  \frac{dX_t}{dt} \;=\; b_\theta(X_t, t, m),\qquad X_{0}=x_0,\quad t\in[0,1],
+\]
+using a \texttt{dopri5} solver with \(\texttt{n\_step}=10\). The trajectory is deterministic conditional on \((x_0,m)\); randomness stems from \(\xi\) and \(m\). At the final time, we overwrite visible pixels from the original image:
+\[
+  \hat{x}_1 \;=\; m \odot x_1 \;+\; (1-m)\odot X_1^{\text{gen}},
+\]
+ensuring only masked regions are changed.
+
+\section{Shapes and dimensions}
+\begin{itemize}[leftmargin=1.25em]
+  \item Flattened image space: \(d=3072\).
+  \item U-Net input: \([5, 32, 32]\) (3 image + 1 time + 1 mask).
+  \item U-Net output: \([3, 32, 32]\) (flattened to \([3072]\)).
+  \item Wrapper inputs: either \([3072]\) with \(t\) provided separately, or \([3073]\) with \(t\) appended.
+\end{itemize}
+These dimensions do not depend on \(\texttt{num\_patches}\): it affects only the geometry of the binary mask, not the number of channels.
+
+\section{Hyperparameters and constants}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Quantity & Value \\
+\midrule
+Class & CIFAR-10 ``dog'' (id = 5) \\
+Subset size & \(5000\) images \\
+Resolution & \(32\times 32\), \(3\) channels \\
+Normalization & mean \((0.5,0.5,0.5)\), std \((0.5,0.5,0.5)\) \\
+Batch size & \(32\) \\
+patch size & \(8\) \\
+num patches & \(4\) \\
+mask loss weight \(\lambda\) & \(10.0\) \\
+Interpolant & one-sided linear (path \(x_t=(1-t)x_0+t x_1\)) \\
+Losses & one-sided-b, one-sided-eta (shared) \\
+Optimizer & Adam, \(\texttt{lr}=10^{-4}\) \\
+Scheduler & CosineAnnealingLR, \(T_{\max}=5000\), \(\eta_{\min}=10^{-6}\) \\
+ODE integrator & Probability Flow, \(\texttt{method=dopri5}\), \(\texttt{n\_step}=10\) \\
+Stopping & fixed number of steps: \(5000\) \\
+Params \(b_\theta\) & \(\approx 8{,}565{,}315\) \\
+Params \(\eta_\phi\) & \(\approx 8{,}565{,}315\) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Remarks and limitations}
+\begin{itemize}[leftmargin=1.25em]
+  \item No validation split or early stopping: termination is by fixed budget.
+  \item Masks are resampled at every step (online data augmentation); no per-image fixed mask.
+  \item The model is \emph{conditional flow matching} (not score-based diffusion, not a Schrödinger bridge). Generation is deterministic conditional on \((x_0,m)\).
+  \item Mean reweighting \(\bar{w}\) is an efficient global approximation (instead of exact pixel-wise weighting in the sum).
+\end{itemize}
+
+\end{document}
+
+
