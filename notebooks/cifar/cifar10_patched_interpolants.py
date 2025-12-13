@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time
 import sys
+import os
 sys.path.append('../../')
 from typing import Tuple, Any
 
@@ -178,49 +179,79 @@ class UNetDenoiser(nn.Module):
 
 # we define wrapper for eta network to match expected interface
 class EtaNetwork(nn.Module):
-    """we wrap unet to accept concatenated [x, t] input"""
+    """we wrap unet to accept separate (x, t) inputs"""
     def __init__(self, unet):
         super().__init__()
-        self.unet = unet
+        self.unet = unet  # we store underlying unet
     
-    def forward(self, xt_concat):
-        """we expect input of shape [bs, 3*32*32 + 1]"""
-        bs = xt_concat.shape[0]
-        x = xt_concat[:, :-1].reshape(bs, 3, 32, 32)  # we reshape to image
-        t = xt_concat[:, -1:]  # we extract time
+    def forward(self, x, t):
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""
+        bs = x.shape[0]  # we get batch size
+        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
         
-        # we expand time to match spatial dimensions
-        t_channel = t.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)
-        x_with_t = torch.cat([x, t_channel], dim=1)  # we concatenate time as 4th channel
+        if not isinstance(t, torch.Tensor):  # we convert non-tensor time to tensor
+            t_tensor = torch.tensor(t, device=x.device, dtype=x.dtype)
+        else:
+            t_tensor = t.to(x.device)  # we move time tensor to same device as x
         
-        # we process through unet
-        out = self.unet(x_with_t)
+        if t_tensor.dim() == 0:  # we handle scalar time
+            t_batch = t_tensor.repeat(bs).unsqueeze(1)  # we repeat scalar t over batch
+        elif t_tensor.dim() == 1:  # we handle vector time
+            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast single time value to batch
+                t_batch = t_tensor.repeat(bs).unsqueeze(1)
+            else:
+                t_batch = t_tensor.unsqueeze(1)  # we add feature dimension
+        elif t_tensor.dim() == 2:  # we handle matrix-shaped time
+            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast row to batch
+                t_batch = t_tensor.repeat(bs, 1)
+            else:
+                t_batch = t_tensor  # we assume proper shape [bs, 1]
+        else:
+            raise ValueError("we expect time tensor of dimension at most 2")
         
-        # we flatten output
-        return out.reshape(bs, -1)
+        t_channel = t_batch.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)  # we broadcast time as extra channel
+        x_with_t = torch.cat([x_img, t_channel], dim=1)  # we concatenate time as 4th channel
+        
+        out = self.unet(x_with_t)  # we run unet
+        return out.reshape(bs, -1)  # we flatten output
 
 # we define velocity field wrapper
 class VelocityNetwork(nn.Module):
-    """we wrap unet for velocity field b"""
+    """we wrap unet for velocity field b with separate (x, t) inputs"""
     def __init__(self, unet):
         super().__init__()
-        self.unet = unet
+        self.unet = unet  # we store underlying unet
     
-    def forward(self, xt_concat):
-        """we expect input of shape [bs, 3*32*32 + 1]"""
-        bs = xt_concat.shape[0]
-        x = xt_concat[:, :-1].reshape(bs, 3, 32, 32)  # we reshape to image
-        t = xt_concat[:, -1:]  # we extract time
+    def forward(self, x, t):
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""
+        bs = x.shape[0]  # we get batch size
+        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
         
-        # we expand time to match spatial dimensions
-        t_channel = t.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)
-        x_with_t = torch.cat([x, t_channel], dim=1)  # we concatenate time as 4th channel
+        if not isinstance(t, torch.Tensor):  # we convert non-tensor time to tensor
+            t_tensor = torch.tensor(t, device=x.device, dtype=x.dtype)
+        else:
+            t_tensor = t.to(x.device)  # we move time tensor to same device as x
         
-        # we process through unet
-        out = self.unet(x_with_t)
+        if t_tensor.dim() == 0:  # we handle scalar time
+            t_batch = t_tensor.repeat(bs).unsqueeze(1)  # we repeat scalar t over batch
+        elif t_tensor.dim() == 1:  # we handle vector time
+            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast single time value to batch
+                t_batch = t_tensor.repeat(bs).unsqueeze(1)
+            else:
+                t_batch = t_tensor.unsqueeze(1)  # we add feature dimension
+        elif t_tensor.dim() == 2:  # we handle matrix-shaped time
+            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast row to batch
+                t_batch = t_tensor.repeat(bs, 1)
+            else:
+                t_batch = t_tensor  # we assume proper shape [bs, 1]
+        else:
+            raise ValueError("we expect time tensor of dimension at most 2")
         
-        # we flatten output
-        return out.reshape(bs, -1)
+        t_channel = t_batch.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)  # we broadcast time as extra channel
+        x_with_t = torch.cat([x_img, t_channel], dim=1)  # we concatenate time as 4th channel
+        
+        out = self.unet(x_with_t)  # we run unet
+        return out.reshape(bs, -1)  # we flatten output
 
 # we define training step function
 def train_step(
@@ -349,144 +380,178 @@ def make_plots(
     
     plt.suptitle(f'dog patch reconstruction - epoch {counter}', fontsize=14, y=1.02)
     plt.tight_layout()
-    plt.savefig(f'dog_reconstruction_epoch_{counter}.png', dpi=150, bbox_inches='tight')
+    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for saving figures
+    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
+    recon_path = os.path.join(results_dir, f"dog_reconstruction_epoch_{counter}.png")  # we build reconstruction path
+    plt.savefig(recon_path, dpi=150, bbox_inches="tight")
     plt.show()
     
     # we plot training curves
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
     
-    epochs = np.arange(len(data_dict['losses'])) * metrics_freq
+    epochs = np.arange(len(data_dict["losses"])) * metrics_freq
     
     # we plot losses
-    axes[0].plot(epochs, data_dict['losses'], label='total loss', linewidth=2)
-    axes[0].plot(epochs, data_dict['b_losses'], label='b loss', alpha=0.7)
-    axes[0].plot(epochs, data_dict['eta_losses'], label='eta loss', alpha=0.7)
-    axes[0].set_xlabel('epoch')
-    axes[0].set_ylabel('loss')
-    axes[0].set_title('training loss (dog class)')
+    axes[0].plot(epochs, data_dict["losses"], label="total loss", linewidth=2)
+    axes[0].plot(epochs, data_dict["b_losses"], label="b loss", alpha=0.7)
+    axes[0].plot(epochs, data_dict["eta_losses"], label="eta loss", alpha=0.7)
+    axes[0].set_xlabel("epoch")
+    axes[0].set_ylabel("loss")
+    axes[0].set_title("training loss (dog class)")
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
     # we plot gradients
-    axes[1].plot(epochs, data_dict['b_grads'], label='b grad norm', linewidth=2)
-    axes[1].plot(epochs, data_dict['eta_grads'], label='eta grad norm', linewidth=2)
-    axes[1].set_xlabel('epoch')
-    axes[1].set_ylabel('gradient norm')
-    axes[1].set_title('gradient norms')
+    axes[1].plot(epochs, data_dict["b_grads"], label="b grad norm", linewidth=2)
+    axes[1].plot(epochs, data_dict["eta_grads"], label="eta grad norm", linewidth=2)
+    axes[1].set_xlabel("epoch")
+    axes[1].set_ylabel("gradient norm")
+    axes[1].set_title("gradient norms")
     axes[1].legend()
     axes[1].grid(True, alpha=0.3)
     
     # we plot learning rates
-    axes[2].plot(epochs, data_dict['lrs'], label='learning rate', linewidth=2)
-    axes[2].set_xlabel('epoch')
-    axes[2].set_ylabel('learning rate')
-    axes[2].set_title('learning rate schedule')
+    axes[2].plot(epochs, data_dict["lrs"], label="learning rate", linewidth=2)
+    axes[2].set_xlabel("epoch")
+    axes[2].set_ylabel("learning rate")
+    axes[2].set_title("learning rate schedule")
     axes[2].legend()
     axes[2].grid(True, alpha=0.3)
     
+    path_name = interpolant.path  # we get interpolant path name
+    gamma_name = getattr(interpolant, "gamma_type", "none")  # we get gamma schedule name
+    
     plt.tight_layout()
-    plt.savefig(f'dog_training_curves_epoch_{counter}.png', dpi=150, bbox_inches='tight')
+    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for saving curves
+    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
+    curves_path = os.path.join(results_dir, f"dog_training_curves_{path_name}_{gamma_name}_epoch_{counter}.png")  # we build curves path
+    plt.savefig(curves_path, dpi=150, bbox_inches="tight")
     plt.show()
-
+    
 # we define main training setup
 if __name__ == "__main__":
     # we set hyperparameters
-    base_lr = 1e-4
-    batch_size = 32
-    n_epochs = 5000
-    patch_size = 8
-    num_patches = 4
-    metrics_freq = 100
-    plot_freq = 500
+    base_lr = 1e-4  # we set base learning rate
+    batch_size = 32  # we set batch size
+    n_epochs = 5000  # we set number of epochs
+    patch_size = 8  # we set patch size
+    num_patches = 4  # we set number of patches
+    metrics_freq = 100  # we set metrics logging frequency
+    plot_freq = 500  # we set plotting frequency
     
-    print(f"\nhyperparameters:")
-    print(f"  class: dog (cifar10 class 5)")
-    print(f"  batch_size: {batch_size}")
-    print(f"  learning_rate: {base_lr}")
-    print(f"  n_epochs: {n_epochs}")
-    print(f"  patch_size: {patch_size}")
-    print(f"  num_patches: {num_patches}")
+    print("\nhyperparameters:")  # we print header for hyperparameters
+    print(f"  class: dog (cifar10 class 5)")  # we print target class
+    print(f"  batch_size: {batch_size}")  # we print batch size
+    print(f"  learning_rate: {base_lr}")  # we print base learning rate
+    print(f"  n_epochs: {n_epochs}")  # we print number of epochs
+    print(f"  patch_size: {patch_size}")  # we print patch size
+    print(f"  num_patches: {num_patches}")  # we print number of patches
     
-    # we define interpolant (one-sided linear interpolation)
-    path = 'one-sided-linear'
-    interpolant = stochastic_interpolant.Interpolant(path=path, gamma_type=None)
-    print(f"\nusing interpolant: {path}")
+    paths = ["linear", "trig", "encoding-decoding"]  # we define two-sided interpolant paths
+    gamma_types = ["bsquared", "sinesquared", "sigmoid"]  # we define non-gaussian gamma schedules
     
-    # we define loss functions
-    loss_fn_b = stochastic_interpolant.make_loss(
-        method='shared', interpolant=interpolant, loss_type='one-sided-b'
-    )
-    loss_fn_eta = stochastic_interpolant.make_loss(
-        method='shared', interpolant=interpolant, loss_type='one-sided-eta'
-    )
-    
-    # we create networks
-    print("\ncreating u-net architectures...")
-    unet_b = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)
-    unet_eta = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)
-    
-    b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())
-    eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())
-    
-    # we count parameters
-    n_params_b = sum(p.numel() for p in b.parameters() if p.requires_grad)
-    n_params_eta = sum(p.numel() for p in eta.parameters() if p.requires_grad)
-    print(f"b network parameters: {n_params_b:,}")
-    print(f"eta network parameters: {n_params_eta:,}")
-    
-    # we create optimizers and schedulers
-    opt_b = torch.optim.Adam(b.parameters(), lr=base_lr)
-    opt_eta = torch.optim.Adam(eta.parameters(), lr=base_lr)
-    sched_b = torch.optim.lr_scheduler.CosineAnnealingLR(opt_b, T_max=n_epochs, eta_min=base_lr*0.01)
-    sched_eta = torch.optim.lr_scheduler.CosineAnnealingLR(opt_eta, T_max=n_epochs, eta_min=base_lr*0.01)
-    
-    # we initialize data dictionary
-    data_dict = {
-        'losses': [],
-        'b_losses': [],
-        'eta_losses': [],
-        'b_grads': [],
-        'eta_grads': [],
-        'lrs': []
-    }
-    
-    # we train the model
-    print("\nstarting training...\n")
-    counter = 1
-    for epoch in range(n_epochs):
-        loss, b_loss, eta_loss, b_grad, eta_grad = train_step(
-            batch_size, interpolant, opt_b, opt_eta, sched_b, sched_eta,
-            patch_size, num_patches
-        )
-        
-        # we log metrics
-        if (counter - 1) % metrics_freq == 0:
-            data_dict['losses'].append(grab(loss).item())
-            data_dict['b_losses'].append(grab(b_loss).item())
-            data_dict['eta_losses'].append(grab(eta_loss).item())
-            data_dict['b_grads'].append(grab(b_grad).item())
-            data_dict['eta_grads'].append(grab(eta_grad).item())
-            data_dict['lrs'].append(opt_b.param_groups[0]['lr'])
+    for path in paths:
+        for gamma_type in gamma_types:
+            print(f"\nusing interpolant: path={path}, gamma_type={gamma_type}")  # we log current interpolant config
             
-            print(f"epoch {counter}: loss={grab(loss).item():.4f}, b_loss={grab(b_loss).item():.4f}, eta_loss={grab(eta_loss).item():.4f}")
-        
-        # we make plots
-        if (counter - 1) % plot_freq == 0:
-            make_plots(b, eta, interpolant, counter, data_dict, patch_size, num_patches)
+            interpolant = stochastic_interpolant.Interpolant(path=path, gamma_type=gamma_type)  # we create interpolant
+            interpolant.gamma_type = gamma_type  # we store gamma type on interpolant for logging
             
-            # we save checkpoints
-            torch.save({
-                'epoch': counter,
-                'b_state_dict': b.state_dict(),
-                'eta_state_dict': eta.state_dict(),
-                'opt_b_state_dict': opt_b.state_dict(),
-                'opt_eta_state_dict': opt_eta.state_dict(),
-                'data_dict': data_dict,
-                'class': 'dog',
-                'class_id': 5
-            }, f'dog_checkpoint_epoch_{counter}.pt')
-            print(f"saved checkpoint at epoch {counter}")
-        
-        counter += 1
-    
-    print("\ntraining complete!")
+            # we define loss functions for two-sided stochastic interpolant
+            loss_fn_b = stochastic_interpolant.make_loss(
+                method="shared", interpolant=interpolant, loss_type="b"
+            )
+            loss_fn_eta = stochastic_interpolant.make_loss(
+                method="shared", interpolant=interpolant, loss_type="eta"
+            )
+            
+            # we create networks
+            print("\ncreating u-net architectures...")  # we notify network instantiation
+            unet_b = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)  # we create u-net for b
+            unet_eta = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)  # we create u-net for eta
+            
+            b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())  # we move b network to device
+            eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())  # we move eta network to device
+            
+            # we count parameters
+            n_params_b = sum(p.numel() for p in b.parameters() if p.requires_grad)  # we count trainable params of b
+            n_params_eta = sum(p.numel() for p in eta.parameters() if p.requires_grad)  # we count trainable params of eta
+            print(f"b network parameters: {n_params_b:,}")  # we print number of parameters of b
+            print(f"eta network parameters: {n_params_eta:,}")  # we print number of parameters of eta
+            
+            # we create optimizers and schedulers
+            opt_b = torch.optim.Adam(b.parameters(), lr=base_lr)  # we create optimizer for b
+            opt_eta = torch.optim.Adam(eta.parameters(), lr=base_lr)  # we create optimizer for eta
+            sched_b = torch.optim.lr_scheduler.CosineAnnealingLR(
+                opt_b, T_max=n_epochs, eta_min=base_lr * 0.01
+            )  # we create lr scheduler for b
+            sched_eta = torch.optim.lr_scheduler.CosineAnnealingLR(
+                opt_eta, T_max=n_epochs, eta_min=base_lr * 0.01
+            )  # we create lr scheduler for eta
+            
+            # we initialize data dictionary
+            data_dict = {
+                "losses": [],
+                "b_losses": [],
+                "eta_losses": [],
+                "b_grads": [],
+                "eta_grads": [],
+                "lrs": [],
+            }  # we store training metrics
+            
+            # we train the model for this configuration
+            print("\nstarting training...\n")  # we announce training start
+            counter = 1  # we initialize iteration counter
+            for epoch in range(n_epochs):
+                loss, b_loss, eta_loss, b_grad, eta_grad = train_step(
+                    batch_size, interpolant, opt_b, opt_eta, sched_b, sched_eta, patch_size, num_patches
+                )  # we perform one training step
+                
+                # we log metrics
+                if (counter - 1) % metrics_freq == 0:
+                    data_dict["losses"].append(grab(loss).item())  # we log total loss
+                    data_dict["b_losses"].append(grab(b_loss).item())  # we log b loss
+                    data_dict["eta_losses"].append(grab(eta_loss).item())  # we log eta loss
+                    data_dict["b_grads"].append(grab(b_grad).item())  # we log gradient norm of b
+                    data_dict["eta_grads"].append(grab(eta_grad).item())  # we log gradient norm of eta
+                    data_dict["lrs"].append(opt_b.param_groups[0]["lr"])  # we log learning rate
+                    
+                    print(
+                        f"[path={path} | gamma_type={gamma_type}] epoch {counter}: "
+                        f"loss={grab(loss).item():.4f}, "
+                        f"b_loss={grab(b_loss).item():.4f}, "
+                        f"eta_loss={grab(eta_loss).item():.4f}"
+                    )  # we print training status
+                
+                # we make plots and save checkpoints
+                if (counter - 1) % plot_freq == 0:
+                    make_plots(b, eta, interpolant, counter, data_dict, patch_size, num_patches)  # we visualize results
+                    
+                    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for checkpoints
+                    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
+                    ckpt_name = os.path.join(
+                        results_dir,
+                        f"dog_checkpoint_{path}_{gamma_type}_epoch_{counter}.pt",
+                    )  # we build checkpoint filename
+                    torch.save(
+                        {
+                            "epoch": counter,
+                            "b_state_dict": b.state_dict(),
+                            "eta_state_dict": eta.state_dict(),
+                            "opt_b_state_dict": opt_b.state_dict(),
+                            "opt_eta_state_dict": opt_eta.state_dict(),
+                            "data_dict": data_dict,
+                            "class": "dog",
+                            "class_id": 5,
+                            "path": path,
+                            "gamma_type": gamma_type,
+                        },
+                        ckpt_name,
+                    )  # we save checkpoint
+                    print(
+                        f"saved checkpoint at epoch {counter} for path={path}, gamma_type={gamma_type}"
+                    )  # we log checkpoint saving
+                
+                counter += 1  # we increment iteration counter
+            
+            print(f"\ntraining complete for path={path}, gamma_type={gamma_type}\n")  # we mark configuration as finished
