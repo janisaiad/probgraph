@@ -1,0 +1,259 @@
+\begin{thebibliography}{48}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Albergo \& Vanden-Eijnden(2022)Albergo and Vanden-Eijnden]{albergo2022building}
+Albergo, M.~S. and Vanden-Eijnden, E.
+\newblock Building normalizing flows with stochastic interpolants.
+\newblock \emph{arXiv preprint arXiv:2209.15571}, 2022.
+
+\bibitem[Albergo et~al.(2023)Albergo, Boffi, and Vanden-Eijnden]{albergo2023stochastic}
+Albergo, M.~S., Boffi, N.~M., and Vanden-Eijnden, E.
+\newblock Stochastic interpolants: A unifying framework for flows and diffusions.
+\newblock \emph{arXiv preprint arXiv:2303.08797}, 2023.
+
+\bibitem[Benamou \& Brenier(2000)Benamou and Brenier]{benamou2000}
+Benamou, J.-D. and Brenier, Y.
+\newblock A computational fluid mechanics solution to the monge-kantorovich mass transfer problem.
+\newblock \emph{Numerische Mathematik}, 84\penalty0 (3):\penalty0 375--393, 2000.
+\newblock \doi{10.1007/s002110050002}.
+\newblock URL \url{https://doi.org/10.1007/s002110050002}.
+
+\bibitem[Chen \& Lipman(2023)Chen and Lipman]{chen2023riemannian}
+Chen, R.~T. and Lipman, Y.
+\newblock Riemannian flow matching on general geometries.
+\newblock \emph{arXiv preprint arXiv:2302.03660}, 2023.
+
+\bibitem[Chen(2018)]{torchdiffeq}
+Chen, R. T.~Q.
+\newblock torchdiffeq, 2018.
+\newblock URL \url{https://github.com/rtqichen/torchdiffeq}.
+
+\bibitem[Cuturi(2013)]{cuturi2013sinkhorn}
+Cuturi, M.
+\newblock Sinkhorn distances: Lightspeed computation of optimal transport.
+\newblock \emph{Advances in neural information processing systems}, 26, 2013.
+
+\bibitem[Dao et~al.(2023)Dao, Phung, Nguyen, and Tran]{dao2023flow}
+Dao, Q., Phung, H., Nguyen, B., and Tran, A.
+\newblock Flow matching in latent space.
+\newblock \emph{arXiv preprint arXiv:2307.08698}, 2023.
+
+\bibitem[De~Bortoli et~al.(2021)De~Bortoli, Thornton, Heng, and Doucet]{bortoli2021}
+De~Bortoli, V., Thornton, J., Heng, J., and Doucet, A.
+\newblock Diffusion schr\"{o}dinger bridge with applications to score-based generative modeling.
+\newblock In Ranzato, M., Beygelzimer, A., Dauphin, Y., Liang, P., and Vaughan, J.~W. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~34, pp.\  17695--17709. Curran Associates, Inc., 2021.
+\newblock URL \url{https://proceedings.neurips.cc/paper_files/paper/2021/file/940392f5f32a7ade1cc201767cf83e31-Paper.pdf}.
+
+\bibitem[Dhariwal \& Nichol(2021)Dhariwal and Nichol]{dhariwal2021diffusion}
+Dhariwal, P. and Nichol, A.
+\newblock Diffusion models beat gans on image synthesis.
+\newblock \emph{Advances in neural information processing systems}, 34:\penalty0 8780--8794, 2021.
+
+\bibitem[Dinh et~al.(2017)Dinh, {Sohl-Dickstein}, and Bengio]{dinh_density_2017}
+Dinh, L., {Sohl-Dickstein}, J., and Bengio, S.
+\newblock Density {{Estimation Using Real NVP}}.
+\newblock In \emph{International Conference on Learning Representations}, pp.\ ~32, 2017.
+
+\bibitem[Durkan et~al.(2019)Durkan, Bekasov, Murray, and Papamakarios]{durkan2019}
+Durkan, C., Bekasov, A., Murray, I., and Papamakarios, G.
+\newblock Neural spline flows.
+\newblock In Wallach, H., Larochelle, H., Beygelzimer, A., d\textquotesingle Alch\'{e}-Buc, F., Fox, E., and Garnett, R. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~32. Curran Associates, Inc., 2019.
+\newblock URL \url{https://proceedings.neurips.cc/paper/2019/file/7ac71d433f282034e088473244df8c02-Paper.pdf}.
+
+\bibitem[Ho \& Salimans(2022)Ho and Salimans]{ho2022classifier}
+Ho, J. and Salimans, T.
+\newblock Classifier-free diffusion guidance.
+\newblock \emph{arXiv preprint arXiv:2207.12598}, 2022.
+
+\bibitem[Ho et~al.(2020{\natexlab{a}})Ho, Jain, and Abbeel]{ho2020}
+Ho, J., Jain, A., and Abbeel, P.
+\newblock Denoising diffusion probabilistic models.
+\newblock In Larochelle, H., Ranzato, M., Hadsell, R., Balcan, M., and Lin, H. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~33, pp.\  6840--6851. Curran Associates, Inc., 2020{\natexlab{a}}.
+\newblock URL \url{https://proceedings.neurips.cc/paper/2020/file/4c5bcfec8584af0d967f1ab10179ca4b-Paper.pdf}.
+
+\bibitem[Ho et~al.(2020{\natexlab{b}})Ho, Jain, and Abbeel]{ho2020denoising}
+Ho, J., Jain, A., and Abbeel, P.
+\newblock Denoising diffusion probabilistic models.
+\newblock \emph{Advances in neural information processing systems}, 33:\penalty0 6840--6851, 2020{\natexlab{b}}.
+
+\bibitem[Ho et~al.(2022{\natexlab{a}})Ho, Saharia, Chan, Fleet, Norouzi, and Salimans]{ho2022cascaded}
+Ho, J., Saharia, C., Chan, W., Fleet, D.~J., Norouzi, M., and Salimans, T.
+\newblock Cascaded diffusion models for high fidelity image generation.
+\newblock \emph{The Journal of Machine Learning Research}, 23\penalty0 (1):\penalty0 2249--2281, 2022{\natexlab{a}}.
+
+\bibitem[Ho et~al.(2022{\natexlab{b}})Ho, Salimans, Gritsenko, Chan, Norouzi, and Fleet]{ho2022video}
+Ho, J., Salimans, T., Gritsenko, A., Chan, W., Norouzi, M., and Fleet, D.~J.
+\newblock Video diffusion models.
+\newblock \emph{arXiv:2204.03458}, 2022{\natexlab{b}}.
+
+\bibitem[Hu et~al.(2023)Hu, Zhang, Tang, Mettes, Zhao, and Snoek]{hu2023latent}
+Hu, V.~T., Zhang, D.~W., Tang, M., Mettes, P., Zhao, D., and Snoek, C.~G.
+\newblock Latent space editing in transformer-based flow matching.
+\newblock In \emph{ICML Workshop on New Frontiers in Learning, Control, and Dynamical Systems}, 2023.
+
+\bibitem[Huang et~al.(2016)Huang, Sun, Liu, Sedra, and Weinberger]{huang_deep_2016}
+Huang, G., Sun, Y., Liu, Z., Sedra, D., and Weinberger, K.
+\newblock Deep {{Networks}} with {{Stochastic Depth}}.
+\newblock \emph{arXiv:1603.09382 [cs]}, July 2016.
+
+\bibitem[Kingma \& Ba(2014)Kingma and Ba]{kingma2014adam}
+Kingma, D.~P. and Ba, J.
+\newblock Adam: A method for stochastic optimization.
+\newblock \emph{arXiv preprint arXiv:1412.6980}, 2014.
+
+\bibitem[Kingma \& Welling(2013)Kingma and Welling]{kingma_auto-encoding_2013}
+Kingma, D.~P. and Welling, M.
+\newblock Auto-{{Encoding Variational Bayes}}.
+\newblock \emph{arXiv [Preprint]}, 0, 2013.
+\newblock URL \url{https://arxiv.org/1312.6114v10}.
+
+\bibitem[Klein et~al.(2023)Klein, Krämer, and Noé]{klein2023equivariant}
+Klein, L., Krämer, A., and Noé, F.
+\newblock Equivariant flow matching, 2023.
+
+\bibitem[Lee et~al.(2023)Lee, Kim, and Ye]{lee2023minimizing}
+Lee, S., Kim, B., and Ye, J.~C.
+\newblock Minimizing trajectory curvature of ode-based generative models.
+\newblock \emph{arXiv preprint arXiv:2301.12003}, 2023.
+
+\bibitem[Lipman et~al.(2022{\natexlab{a}})Lipman, Chen, Ben-Hamu, Nickel, and Le]{lipman2022flow}
+Lipman, Y., Chen, R.~T., Ben-Hamu, H., Nickel, M., and Le, M.
+\newblock Flow matching for generative modeling.
+\newblock \emph{arXiv preprint arXiv:2210.02747}, 2022{\natexlab{a}}.
+
+\bibitem[Lipman et~al.(2022{\natexlab{b}})Lipman, Chen, Ben-Hamu, Nickel, and Le]{lipman2022}
+Lipman, Y., Chen, R. T.~Q., Ben-Hamu, H., Nickel, M., and Le, M.
+\newblock Flow matching for generative modeling, 2022{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2210.02747}.
+
+\bibitem[Liu et~al.(2023{\natexlab{a}})Liu, Vahdat, Huang, Theodorou, Nie, and Anandkumar]{liu20232}
+Liu, G.-H., Vahdat, A., Huang, D.-A., Theodorou, E.~A., Nie, W., and Anandkumar, A.
+\newblock $\text{I}^2$sb: Image-to-image schr$\backslash$" odinger bridge.
+\newblock \emph{arXiv preprint arXiv:2302.05872}, 2023{\natexlab{a}}.
+
+\bibitem[Liu(2022)]{liu2022-ot}
+Liu, Q.
+\newblock Rectified flow: A marginal preserving approach to optimal transport, 2022.
+\newblock URL \url{https://arxiv.org/abs/2209.14577}.
+
+\bibitem[Liu et~al.(2022{\natexlab{a}})Liu, Gong, and Liu]{liu2022}
+Liu, X., Gong, C., and Liu, Q.
+\newblock Flow straight and fast: Learning to generate and transfer data with rectified flow, 2022{\natexlab{a}}.
+\newblock URL \url{https://arxiv.org/abs/2209.03003}.
+
+\bibitem[Liu et~al.(2022{\natexlab{b}})Liu, Gong, and Liu]{liu2022flow}
+Liu, X., Gong, C., and Liu, Q.
+\newblock Flow straight and fast: Learning to generate and transfer data with rectified flow.
+\newblock \emph{arXiv preprint arXiv:2209.03003}, 2022{\natexlab{b}}.
+
+\bibitem[Liu et~al.(2023{\natexlab{b}})Liu, Zhang, Ma, Peng, and Liu]{liu2023instaflow}
+Liu, X., Zhang, X., Ma, J., Peng, J., and Liu, Q.
+\newblock Instaflow: One step is enough for high-quality diffusion-based text-to-image generation.
+\newblock \emph{arXiv preprint arXiv:2309.06380}, 2023{\natexlab{b}}.
+
+\bibitem[Nichol \& Dhariwal(2021)Nichol and Dhariwal]{nichol2021improved}
+Nichol, A.~Q. and Dhariwal, P.
+\newblock Improved denoising diffusion probabilistic models.
+\newblock In \emph{International Conference on Machine Learning}, pp.\  8162--8171. PMLR, 2021.
+
+\bibitem[Pooladian et~al.(2023)Pooladian, Ben-Hamu, Domingo-Enrich, Amos, Lipman, and Chen]{pooladian2023multisample}
+Pooladian, A.-A., Ben-Hamu, H., Domingo-Enrich, C., Amos, B., Lipman, Y., and Chen, R.
+\newblock Multisample flow matching: Straightening flows with minibatch couplings.
+\newblock \emph{arXiv preprint arXiv:2304.14772}, 2023.
+
+\bibitem[Rezende \& Mohamed(2015)Rezende and Mohamed]{rezende_variational_2015}
+Rezende, D. and Mohamed, S.
+\newblock Variational {{Inference}} with {{Normalizing Flows}}.
+\newblock In \emph{International {{Conference}} on {{Machine Learning}}}, pp.\  1530--1538. {PMLR}, June 2015.
+
+\bibitem[Saharia et~al.(2022)Saharia, Ho, Chan, Salimans, Fleet, and Norouzi]{saharia2022image}
+Saharia, C., Ho, J., Chan, W., Salimans, T., Fleet, D.~J., and Norouzi, M.
+\newblock Image super-resolution via iterative refinement.
+\newblock \emph{IEEE Transactions on Pattern Analysis and Machine Intelligence}, 45\penalty0 (4):\penalty0 4713--4726, 2022.
+
+\bibitem[Schneuing et~al.(2022)Schneuing, Du, Harris, Jamasb, Igashov, Du, Blundell, Li{\'o}, Gomes, Welling, et~al.]{schneuing2022structure}
+Schneuing, A., Du, Y., Harris, C., Jamasb, A., Igashov, I., Du, W., Blundell, T., Li{\'o}, P., Gomes, C., Welling, M., et~al.
+\newblock Structure-based drug design with equivariant diffusion models.
+\newblock \emph{arXiv preprint arXiv:2210.13695}, 2022.
+
+\bibitem[Shi et~al.(2022)Shi, Bortoli, Deligiannidis, and Doucet]{shi2022conditional}
+Shi, Y., Bortoli, V.~D., Deligiannidis, G., and Doucet, A.
+\newblock Conditional simulation using diffusion schr\"odinger bridges.
+\newblock In \emph{The 38th Conference on Uncertainty in Artificial Intelligence}, 2022.
+\newblock URL \url{https://openreview.net/forum?id=H9Lu6P8sqec}.
+
+\bibitem[Shi et~al.(2023)Shi, Bortoli, Campbell, and Doucet]{shi2023diffusion}
+Shi, Y., Bortoli, V.~D., Campbell, A., and Doucet, A.
+\newblock Diffusion schr\"odinger bridge matching, 2023.
+
+\bibitem[Singhal et~al.(2023)Singhal, Goldstein, and Ranganath]{singhal2023diffuse}
+Singhal, R., Goldstein, M., and Ranganath, R.
+\newblock Where to diffuse, how to diffuse, and how to get back: Automated learning for multivariate diffusions.
+\newblock In \emph{The Eleventh International Conference on Learning Representations}, 2023.
+
+\bibitem[Sohl-Dickstein et~al.(2015)Sohl-Dickstein, Weiss, Maheswaranathan, and Ganguli]{sohl2015deep}
+Sohl-Dickstein, J., Weiss, E., Maheswaranathan, N., and Ganguli, S.
+\newblock Deep unsupervised learning using nonequilibrium thermodynamics.
+\newblock In \emph{International conference on machine learning}, pp.\  2256--2265. PMLR, 2015.
+
+\bibitem[Somnath et~al.(2023)Somnath, Pariset, Hsieh, Martinez, Krause, and Bunne]{somnath2023aligned}
+Somnath, V.~R., Pariset, M., Hsieh, Y.-P., Martinez, M.~R., Krause, A., and Bunne, C.
+\newblock Aligned diffusion schr\"odinger bridges.
+\newblock In \emph{The 39th Conference on Uncertainty in Artificial Intelligence}, 2023.
+\newblock URL \url{https://openreview.net/forum?id=BkWFJN7_bQ}.
+
+\bibitem[Song \& Ermon(2020)Song and Ermon]{song2020improved}
+Song, Y. and Ermon, S.
+\newblock Improved techniques for training score-based generative models.
+\newblock \emph{Advances in neural information processing systems}, 33:\penalty0 12438--12448, 2020.
+
+\bibitem[Song et~al.(2020)Song, Sohl-Dickstein, Kingma, Kumar, Ermon, and Poole]{song2020score}
+Song, Y., Sohl-Dickstein, J., Kingma, D.~P., Kumar, A., Ermon, S., and Poole, B.
+\newblock Score-based generative modeling through stochastic differential equations.
+\newblock \emph{arXiv preprint arXiv:2011.13456}, 2020.
+
+\bibitem[Song et~al.(2021{\natexlab{a}})Song, Durkan, Murray, and Ermon]{song2021mle}
+Song, Y., Durkan, C., Murray, I., and Ermon, S.
+\newblock Maximum likelihood training of score-based diffusion models.
+\newblock In Ranzato, M., Beygelzimer, A., Dauphin, Y., Liang, P., and Vaughan, J.~W. (eds.), \emph{Advances in Neural Information Processing Systems}, volume~34, pp.\  1415--1428. Curran Associates, Inc., 2021{\natexlab{a}}.
+\newblock URL \url{https://proceedings.neurips.cc/paper/2021/file/0a9fdbb17feb6ccb7ec405cfb85222c4-Paper.pdf}.
+
+\bibitem[Song et~al.(2021{\natexlab{b}})Song, {Sohl-Dickstein}, Kingma, Kumar, Ermon, and Poole]{song_scorebased_2021}
+Song, Y., {Sohl-Dickstein}, J., Kingma, D.~P., Kumar, A., Ermon, S., and Poole, B.
+\newblock Score-based generative modeling through stochastic differential equations.
+\newblock In \emph{International Conference on Learning Representations}, 2021{\natexlab{b}}.
+
+\bibitem[Tabak \& Turner(2013)Tabak and Turner]{tabak2013}
+Tabak, E.~G. and Turner, C.~V.
+\newblock A family of nonparametric density estimation algorithms.
+\newblock \emph{Communications on Pure and Applied Mathematics}, 66\penalty0 (2):\penalty0 145--164, 2013.
+\newblock \doi{https://doi.org/10.1002/cpa.21423}.
+\newblock URL \url{https://onlinelibrary.wiley.com/doi/abs/10.1002/cpa.21423}.
+
+\bibitem[Tabak \& {Vanden-Eijnden}(2010)Tabak and {Vanden-Eijnden}]{tabak_density_2010}
+Tabak, E.~G. and {Vanden-Eijnden}, E.
+\newblock Density estimation by dual ascent of the log-likelihood.
+\newblock \emph{Communications in Mathematical Sciences}, 8\penalty0 (1):\penalty0 217--233, 2010.
+\newblock ISSN 15396746, 19450796.
+\newblock \doi{10.4310/CMS.2010.v8.n1.a11}.
+
+\bibitem[Tong et~al.(2023)Tong, Malkin, Huguet, Zhang, Rector-Brooks, Fatras, Wolf, and Bengio]{tong2023improving}
+Tong, A., Malkin, N., Huguet, G., Zhang, Y., Rector-Brooks, J., Fatras, K., Wolf, G., and Bengio, Y.
+\newblock Improving and generalizing flow-based generative models with minibatch optimal transport.
+\newblock In \emph{ICML Workshop on New Frontiers in Learning, Control, and Dynamical Systems}, 2023.
+
+\bibitem[Trippe et~al.(2022)Trippe, Yim, Tischer, Baker, Broderick, Barzilay, and Jaakkola]{trippe2022diffusion}
+Trippe, B.~L., Yim, J., Tischer, D., Baker, D., Broderick, T., Barzilay, R., and Jaakkola, T.
+\newblock Diffusion probabilistic modeling of protein backbones in 3d for the motif-scaffolding problem.
+\newblock \emph{arXiv preprint arXiv:2206.04119}, 2022.
+
+\bibitem[Wu et~al.(2023)Wu, Trippe, Naesseth, Blei, and Cunningham]{wu2023practical}
+Wu, L., Trippe, B.~L., Naesseth, C.~A., Blei, D.~M., and Cunningham, J.~P.
+\newblock Practical and asymptotically exact conditional sampling in diffusion models.
+\newblock \emph{arXiv preprint arXiv:2306.17775}, 2023.
+
+\end{thebibliography}
