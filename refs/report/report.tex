@@ -1,164 +1,198 @@
-\documentclass[11pt]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{lmodern}
-\usepackage{amsmath, amssymb, amsthm}
-\usepackage{graphicx}
-\usepackage{booktabs}
-\usepackage{hyperref}
-\usepackage{enumitem}
-\usepackage[margin=1in]{geometry}
+%% SIGGRAPH / ACM Conference Two-Column Template
+%% Compile with: pdflatex, xelatex, or lualatex
 
-\title{Mask-Conditioned Stochastic Interpolants for Patch Inpainting on CIFAR-10 (Dogs)}
-\author{}
-\date{}
+\documentclass[sigconf,nonacm]{acmart}
+
+
+\title{Project Report - Denoising Score Matching}
+\subtitle{Probabilistic Graphical Models - MVA 2025-2026}
+
+
+
+\author{Félix Rosseeuw}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{felix.rosseeuw@polytechnique.edu}
+
+\author{Janis Aiad}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{janisaiad.ja@gmail.com}
+
+\author{Guillaume Bernard}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{2000guiber@gmail.com}
+
+% Remove ACM reference information for non-submissions
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+
+\usepackage{graphicx}
+\usepackage{amsmath, amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+\usepackage{microtype}
+
+
 
 \begin{document}
+
+
 \maketitle
 
-\begin{abstract}
-We study mask-conditioned image inpainting on CIFAR-10 (class ``dog'') using stochastic interpolants and flow matching. At each training step, we sample a binary mask to designate visible pixels and replace masked pixels with Gaussian noise to form the starting state. A time-dependent velocity field $b_\theta(x,t,m)$ is learned along a designed linear interpolant from the masked-noisy state to the ground-truth image. At generation time, we integrate the Probability Flow ODE and finally overwrite the visible pixels with their original values so that only masked regions change. We document data, conditioning, equations, architecture, training, sampling, dimensions, and parameter counts.
-\end{abstract}
 
-\section{Data and preprocessing}
-\paragraph{Dataset.} CIFAR-10 (train split), filtered to class 5 (``dog'') only, yielding $5000$ images (out of $50000$). Images are in \(\mathbb{R}^{3\times 32\times 32}\).
+\section{Introduction}
 
-\paragraph{Normalization.} Each image is converted with \texttt{ToTensor} and normalized using mean \((0.5,0.5,0.5)\) and std \((0.5,0.5,0.5)\). Values are centered near \(0\) and lie roughly in \([-1,1]\).
+\section{A Connection between Score Matching and Denoising Autoencoders}
 
-\paragraph{Per-step sampling.} At every training step:
-\begin{itemize}[leftmargin=1.25em]
-  \item we sample a batch of size \(\texttt{batch\_size}=32\) from the 5000 dogs (i.i.d. random indices),
-  \item we sample a binary mask \(m\in\{0,1\}^{3\times 32\times 32}\) by placing \(\texttt{num\_patches}=4\) square patches of size \(\texttt{patch\_size}=8\) to zero (1 = visible, 0 = masked),
-  \item we sample i.i.d. noise \(\xi \sim \mathcal{N}(0,I)\) (same shape as the image).
-\end{itemize}
-The mask is identical across the 3 color channels (replicated by construction). For network conditioning, only the first mask channel is used as a binary map, see Sec.~\ref{sec:architecture}.
+\subsection{Contexte - Les autoencodeurs de débruitage}
 
-\section{Problem and variables}
-We denote \(x_1 \sim p_{\text{data}}\) the target (dog) image, \(m\) the binary mask, and \(\xi \sim \mathcal{N}(0,I)\) the i.i.d. noise. The inpainting initial state is
-\[
-  x_0 \;=\; m \odot x_1 \;+\; (1-m)\odot \xi,
-\]
-where \(\odot\) denotes the Hadamard product. The time \(t \sim \mathcal{U}([0,1])\) is sampled independently.
+Un \textit{autoencodeur} est un réseau de neurones qui apprend à reconstruire un échantillon d'entrée après l'avoir encodé en une représentation de dimension réduite appelée \textit{latente}. 
 
-\section{Interpolant and target dynamics}
-We use a \emph{one-sided linear} interpolant between \(x_0\) and \(x_1\):
-\[
-  x_t \;=\; (1-t)\,x_0 \;+\; t\,x_1,\qquad t\in[0,1],
-\]
-whose pathwise derivative is constant:
-\[
-  \dot{x}_t \;=\; x_1 - x_0.
-\]
-Flow matching learns a time-dependent velocity field \(b_\theta(x,t,m)\) matching this target derivative along the interpolant. An auxiliary term \(\eta_\phi\) is also trained (within \texttt{interflow}) for the shared stochastic interpolant.
+En limitant la dimension de l'espace contenant ces représentations, on contraint l'autoencodeur à y encoder des informations pertinentes pour la caractérisation des données. En revanche, si l’espace \textit{latent} est d'une dimension trop élevée, l’autoencodeur risque d'apprendre une fonction triviale comme l’identité sans capturer la structure statistique des données.
 
-\section{Training objectives}
-We train two networks: \(b_\theta\) (drift/velocity) and \(\eta_\phi\) (auxiliary). The \texttt{interflow} losses are \texttt{one-sided-b} and \texttt{one-sided-eta} with a shared interpolant:
-\begin{align*}
-  \mathcal{L}_{b}(\theta)
-  \;&=\; \mathbb{E}_{x_1,\xi,m,t}\Big[
-      w(m)\,\big\|\, b_\theta(x_t, t, m) - (x_1 - x_0) \big\|_2^2
-  \Big],\\
-  \mathcal{L}_{\eta}(\phi)
-  \;&=\; \text{(auxiliary one-sided-eta term defined by the interpolant)}.
-\end{align*}
-Mask reweighting emphasizes masked regions:
-\[
-  w(m) \;\propto\; m \;+\; \lambda\,(1-m),\qquad \lambda=\texttt{mask\_loss\_weight}=10.0.
-\]
-In practice, we apply the efficient approximation \(\mathcal{L}\leftarrow \bar{w}\cdot \mathcal{L}\) where \(\bar{w}\) is the per-batch mean of per-pixel weights.
+Pour remédier à ce type de problèmes, Vincent et al. ont introduit en 2008 les autoencodeurs \textit{de débruitage} \cite{vincent2008denoising}. Le principe de ces réseaux consiste en l'ajout de bruit gaussien aux échantillons afin d'en obtenir des versions corrompues. En d'autres termes, pour $x$ dans l'ensemble d'entraînement, on génère
+$$\tilde{x}=x+\varepsilon \mathrm{\ avec\ } \varepsilon\sim \mathcal{N}(0,\sigma^2)$$
+Ensuite, à l'instar du fonctionnement d'un autoencodeur habituel, cet échantillon corrompu $\tilde{x}$ est encodé en une représentation latente, puis cette représentation est décodée en une reconstruction $x^r=\mathrm{decode}(\mathrm{encode}(\tilde{x}))$.
 
-\section{Network architecture}
-\label{sec:architecture}
-\paragraph{Backbone.} Two 2D U-Nets (same shape) with GroupNorm and base channels \(64\). Encoder path with 3 levels (stride 2), bottleneck, and symmetric decoder with skip connections.
+Dans ce cadre, l'\textit{entraînement} un autoencodeur de débruitage correspond à l'optimisation de ses paramètres $\theta$ afin qu'ils minimisent l'erreur quadratique moyenne entre un échantillon $x$ et sa reconstruction $x^r$. En d'autres termes, il s'agit de minimiser la fonction $$J_{DAE_{\sigma}}(\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x},x)}[||x^r-x||^2]$$
+où $q_{\sigma}(\tilde{x},x)=q_{\sigma}(\tilde{x}|x)q_0(x)$ désigne la distribution jointe définie par la loi empirique des données d'entraînement $q_0(x)$ et le processus de corruption gaussien $q_{\sigma}(\tilde{x}|x)$.
 
-\paragraph{Explicit conditioning.} Each U-Net sees 5 channels:
-\[
-  \underbrace{3}_{\text{image}} \;+\; \underbrace{1}_{\text{time } t} \;+\; \underbrace{1}_{\text{mask } m}
-\;=\; 5.
-\]
-The scalar time \(t\) is broadcast spatially to a constant \(32\times 32\) map. For the mask, only its first channel \([1\times 32\times 32]\) is concatenated (the mask image is built with 3 identical channels for convenience).
+En pratique, les autoencodeurs de débruitage se sont révélés particulièrement efficaces pour capturer la structure des données. Ils évitaient effectivement l’apprentissage de solutions triviales et produisaient des représentations plus robustes que les autoencodeurs classiques, mais malgré ce succès empirique, le mécanisme qu’ils apprenaient en reconstruisant les exemples corrompus restait mal compris.
 
-\paragraph{Wrappers and I/O.} We operate in vector space with
-\[
-  d \;=\; 3\times 32\times 32 \;=\; 3072.
-\]
-The wrappers reshape the flattened input to \(x\in \mathbb{R}^{3\times 32\times 32}\), concatenate the \(t\) and \(m\) maps to form a \([5\times 32\times 32]\) tensor, and feed the U-Net. The output is \([3\times 32\times 32]\), flattened back to \(\mathbb{R}^{3072}\).
+C’est précisément à cette mauvaise compréhension que l’article de Pascal Vincent paru en 2011 \cite{vincent2011connection} vient apporter une réponse. Il met en lumière un lien théorique entre la reconstruction qu'effectue les autoencodeurs de débruitage et l’estimation du score de la distribution des données.
 
-\paragraph{Parameter counts.} For \(\texttt{in\_channels}=5\), \(\texttt{out\_channels}=3\), \(\texttt{base\_channels}=64\):
-\begin{itemize}[leftmargin=1.25em]
-  \item \(b_\theta\) network: \(\approx 8{,}565{,}315\) parameters,
-  \item \(\eta_\phi\) network: \(\approx 8{,}565{,}315\) parameters,
-  \item total: \(\approx 17{,}130{,}630\) trainable parameters.
-\end{itemize}
+\subsection{Résultat principal}
 
-\section{Training procedure}
-\paragraph{Loop.} At each step:
-\begin{enumerate}[leftmargin=1.25em]
-  \item sample a batch of dog images and a fresh mask per image;
-  \item form \(x_0 = m\odot x_1 + (1-m)\odot \xi\); flatten \(x_0,x_1\) to \(\mathbb{R}^{3072}\);
-  \item sample \(t\sim\mathcal{U}([0,1])\);
-  \item pass \(m\) into the wrappers (explicit conditioning) and compute \(\mathcal{L}_b,\mathcal{L}_\eta\) (one-sided scheme);
-  \item apply \(\bar{w}\) scaling (focus on masked pixels), backprop, optimizer step, scheduler step.
-\end{enumerate}
+Le \textit{score matching} est une technique introduite par Hyvärinen en 2005 \cite{hyvarinen2005score} qui sert à apprendre les paramètres d'un modèle de densité de probabilité $p(x;\theta)$ pour lequel la fonction de partition est intractable, c’est-à-dire impossible à calculer de manière exacte ou efficace en pratique. 
 
-\paragraph{Optimization.} Adam with \(\texttt{lr}=10^{-4}\). CosineAnnealingLR with \(T_{\max}=\texttt{n\_epochs}=5000\), \(\eta_{\min}=10^{-6}\). No gradient clipping is applied (we log gradient norms).
+Le score matching contourne ce problème en utilisant uniquement le \textit{score} $\nabla_x \log p(x;\theta)$, le gradient de la densité logarithmique par rapport au vecteur des données, qui ne dépend pas de cette fonction de partition.
 
-\paragraph{Logging and stopping.} Losses, gradient norms, and LR are logged every \(\texttt{metrics\_freq}=100\) iterations. Plots and checkpoints are saved every \(\texttt{plot\_freq}=500\). Training stops after a fixed budget \(\texttt{n\_epochs}=5000\) (no validation/early stopping).
+Le score matching consiste en l'apprentissage des paramètres $\theta$ afin que le score $\nabla_x \log p(x;\theta)$ corresponde le plus possible au score de la distribution $q(x)$ qui régit les données. En d'autres termes, cela consiste en la minimisation de la fonction $$J_{ESM_q}(\theta)=\mathbb{E}_{q(x)}[\frac{1}{2}||\nabla_x \log p(x;\theta)-\nabla_x \log q(x)||^2]$$
+Cette version du score matching dite \textit{explicite} pose toutefois un problème pratique. Le fait que la distribution $q(x)$ soit inconnue empêche d'obtenir des valeurs cibles de $\nabla_x \log q(x)$ nécessaires à cette minimisation. 
 
-\section{Generation (inpainting)}
-We integrate the Probability Flow ODE:
-\[
-  \frac{dX_t}{dt} \;=\; b_\theta(X_t, t, m),\qquad X_{0}=x_0,\quad t\in[0,1],
-\]
-using a \texttt{dopri5} solver with \(\texttt{n\_step}=10\). The trajectory is deterministic conditional on \((x_0,m)\); randomness stems from \(\xi\) and \(m\). At the final time, we overwrite visible pixels from the original image:
-\[
-  \hat{x}_1 \;=\; m \odot x_1 \;+\; (1-m)\odot X_1^{\text{gen}},
-\]
-ensuring only masked regions are changed.
+Pour pallier à cette limitation, plusieurs variantes dites \textit{implicites} du score matching ont été développées. Ces approches remplacent l’objectif explicite ci-dessus par des critères mathématiquement équivalents mais qui ne nécessitent pas l’accès au score de la distribution cible.
 
-\section{Shapes and dimensions}
-\begin{itemize}[leftmargin=1.25em]
-  \item Flattened image space: \(d=3072\).
-  \item U-Net input: \([5, 32, 32]\) (3 image + 1 time + 1 mask).
-  \item U-Net output: \([3, 32, 32]\) (flattened to \([3072]\)).
-  \item Wrapper inputs: either \([3072]\) with \(t\) provided separately, or \([3073]\) with \(t\) appended.
-\end{itemize}
-These dimensions do not depend on \(\texttt{num\_patches}\): it affects only the geometry of the binary mask, not the number of channels.
+Dans son article de 2011, Vincent propose de modifier l'objectif de score matching explicite en appariant le score $\nabla_x \log p(x;\theta)$ avec celui d'un estimateur de densité de Parzen $q_{\sigma}(\tilde{x})$, une méthode qui sert à approximer la densité de probabilité d’un ensemble de données.
 
-\section{Hyperparameters and constants}
-\begin{center}
-\begin{tabular}{ll}
-\toprule
-Quantity & Value \\
-\midrule
-Class & CIFAR-10 ``dog'' (id = 5) \\
-Subset size & \(5000\) images \\
-Resolution & \(32\times 32\), \(3\) channels \\
-Normalization & mean \((0.5,0.5,0.5)\), std \((0.5,0.5,0.5)\) \\
-Batch size & \(32\) \\
-patch size & \(8\) \\
-num patches & \(4\) \\
-mask loss weight \(\lambda\) & \(10.0\) \\
-Interpolant & one-sided linear (path \(x_t=(1-t)x_0+t x_1\)) \\
-Losses & one-sided-b, one-sided-eta (shared) \\
-Optimizer & Adam, \(\texttt{lr}=10^{-4}\) \\
-Scheduler & CosineAnnealingLR, \(T_{\max}=5000\), \(\eta_{\min}=10^{-6}\) \\
-ODE integrator & Probability Flow, \(\texttt{method=dopri5}\), \(\texttt{n\_step}=10\) \\
-Stopping & fixed number of steps: \(5000\) \\
-Params \(b_\theta\) & \(\approx 8{,}565{,}315\) \\
-Params \(\eta_\phi\) & \(\approx 8{,}565{,}315\) \\
-\bottomrule
-\end{tabular}
-\end{center}
+Ce nouvel objectif de score score matching explicite s'exprime comme la minimisation de la fonction $$J_{ESM_{q_{\sigma}}}(\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x})}[\frac{1}{2}||\nabla_{\tilde{x}} \log p(\tilde{x};\theta)-\nabla\tilde{x} \log q_{\sigma}(\tilde{x})||^2]$$
 
-\section{Remarks and limitations}
-\begin{itemize}[leftmargin=1.25em]
-  \item No validation split or early stopping: termination is by fixed budget.
-  \item Masks are resampled at every step (online data augmentation); no per-image fixed mask.
-  \item The model is \emph{conditional flow matching} (not score-based diffusion, not a Schrödinger bridge). Generation is deterministic conditional on \((x_0,m)\).
-  \item Mean reweighting \(\bar{w}\) is an efficient global approximation (instead of exact pixel-wise weighting in the sum).
-\end{itemize}
+Afin de démontrer son résultat, Vincent introduit ensuite un nouvel objectif de score matching dit \textit{score matching de débruitage} qui consiste en la minimisation de la fonction
+$$J_{DSM_{q_{\sigma}}}(x,\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x})}[\frac{1}{2}||\nabla_{\tilde{x}} \log p(\tilde{x};\theta)-\nabla\tilde{x} \log q_{\sigma}(\tilde{x}|x)||^2]$$
+
+Afin de se représenter intuitivement ce que représente cet objectif, il est utile de remarquer que $\nabla\tilde{x} \log q_{\sigma}(\tilde{x}|x)=\frac{1}{\sigma^2}(x-\tilde{x})$, qui est un mouvement allant de $\tilde{x}$ dans la direction de $x$. Ainsi, le score matching de débruitage contraint le score à ressembler le plus possible à cette direction, et ainsi à se diriger le plus possible vers l'échantillon véritable $x$.
+
+Ce que montre ensuite Vincent, c'est l'équivalence entre les trois problèmes $$J_{ESM_{q_{\sigma}}}\smile J_{DSM_{q_{\sigma}}}\smile J_{DAE_{\sigma}}$$.
+
+En d'autres termes, entraîner un autoencodeur de débruitage équivaut à faire du score matching avec un estimateur de densité de Parzen $q_{\sigma}$.
+
+
+\subsection{Conséquences}
+
+Ce que cette découverte signifie, et surtout pour l'article suivant.
+
+notamment dans la modélisation générative, ce qui est montré dans l'article présenté dans la section suivante.
+
+\section{Generative Modeling by Estimating Gradients of the
+Data Distribution}
+
+\subsection{Contexte}
+
+La \textit{modélisation générative} consiste en l'apprentissage d'un modèle capable de générer, à partir d'un ensemble d'exemples tirés d'une distribution $q$, de nouveaux échantillons cohérents avec cette distribution.
+
+Avant l'introduction de la modélisation générative basée sur le score par Song et Ermon \cite{song2019score}, cette tâche était effectuée par des GANs et des méthodes basées sur la vraisemblance. Ces méthodes avaient leur limitations intrinsèques, et l'introduction de Song et Ermon permettent de coutourner tout ça.
+
+Comme vu dans la section précédente, le score matching de débruitage induit un déplacement local des échantillons corrompus vers les données. Song et Ermon exploitent cette propriété en apprenant ce déplacement au moyen d'un \textit{réseau de score}.
+
+Concrètement, leur méthode consiste à apprendre un \textit{réseau de score} $s_{\theta}:\mathbb{R}^D\rightarrow\mathbb{R}^D$ qui approxime le score de la distribution des données $\nabla_x q(x;\theta)$ pour tout $x$ dans l'espace ambiant. 
+
+Comme vu dans la section précédente, le score pointe vers les régions de forte densité, c'est d'apprendre un champ de vecteurs qui pointent vers les régions de forte densité, ramener les échantillons samplés vers la vraie distribution des données.\\
+\\
+
+Plusieurs obstacles empêchaient en effet de mettre en place une application naïve de cette idée.
+
+L'\textit{hypothèse de la variété} stipule que les données se situent sur une variété de faible dimension contenue dans l'espace ambiant de haute dimensionsous-dimensionnée dans un espace à plus grande dimension. 
+
+Si cette hypothèse s'avère vraie, alors leur support a une mesure de Lebesgue nulle et n'admettent pas de densité par rapport à cette mesure. Par conséquent, non seulement le score est indéfini, ...
+
+mais le score matching est impossible.
+
+Deux autres problèmes liés aux régions de faible densité de données : Ensuite, en supposant que le premier problème soit résolu et que le score soit définissable sur l'espace ambiant, les régions à faible densité de données représentent un problème à la fois pour le calcul du score et pour le sampling avec la dynamique de Langevin.
+
+De plus, si deux modes d'une distribution sont séparées par une région de densité faible, alors le score va mal rendre compte du poids des modes.
+
+Les différentes solutions que proposent Song et Ermon se base sur l'ajout de bruit.
+
+\subsection{Résultat principal}
+
+Pour le premier problème, on bruite les données pour que leur support ne soit plus limité à une variété, et que le score soit défini sur tout l'espace ambiant.
+
+TOUT EXPLIQUER AVEC LE DSM ET TOUT
+ 
+
+
+\subsection{Conséquences}
+Avant les travaux de Song et Ermon, cette tâche était principalement effectuée par des GANs et des méthodes basées sur la vraisemblance, mais ils ont proposé quelque chose de nouveau.
+
+
+
+When learning a denoiser ηz, we found it beneficial to complete the image generation
+with a final denoising step, in which we set ϵ = 0 and switch the integrator to the one given
+in (5.14)
+
+
+
+
+
+j'ai eu boffi en seminaire qui m'a dit que choisir le epsilon optimal est important selon les classes de problemes (il m'avait parlé d'une startup qui utilise ça avec des protéines), on peut se permettre de diminuer grandement le nombre de pas et améliorer l'efficacité at the edge of the stabiility ! 
+
+
+
+
+
+
+
+
+\paragraph{Remarks extracted from the paper.}
+We remarked in Section 6.1 that learning the denoiser $\eta_z$ is more numerically stable than learning the score $s$ directly. Our results suggest that learning the denoiser is best practice.
+
+The factor of $\alpha(t)^{-1}$ in the final term of the SDE could pose numerical problems at $t = 1$, as $\alpha(1) = 0$. As discussed in the paragraph above, a choice of $\epsilon(t)$ which is such that $\epsilon(t)/\alpha(t) \to C$ for some constant $C$ as $t \to 1$ avoids any issue.
+
+Their diversity increases as we increase the diffusion coefficient $\epsilon$.
+
+Moreover, we find that learning $b$ generically performs better than learning $v$, and that learning $\eta$ generically performs better than learning $s$ (except when $\epsilon$ is taken large enough that performance starts to degrade).
+
+Taken together with Figure 9, these results demonstrate qualitatively that small values of $\epsilon$ tend to over-estimate the density within the modes and under-estimate the density in the tails. Conversely, when $\epsilon$ is taken too large, the model tends to under-estimate the modes and over-estimate the tails.
+
+
+
+(on va faire des experiences sur cet epsilon optimal pour montrer direct combien de sous ça fait gagner)
+
+
+
+
+
+
+\section{experiences}
+
+
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
 
 \end{document}
-
-

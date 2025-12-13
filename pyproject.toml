@@ -10,6 +10,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "jupytext>=1.18.1",
     "lightning>=2.5.5",
+    "lmdb>=1.7.5",
     "matplotlib>=3.9.3",
     "numba>=0.61.0",
     "numpy>=1.24.0,<2.0.0",

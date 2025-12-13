@@ -27,27 +27,26 @@ def grab(var):
     """we take a tensor off the gpu and convert it to a numpy array on the cpu"""
     return var.detach().cpu().numpy()
 
-# we load cifar10 dataset
+# we load lsun dataset (bedroom class)
 transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    transforms.Resize((32, 32)),  # we resize lsun images to 32x32
+    transforms.ToTensor(),  # we convert images to tensors
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize channels
 ])
 
-trainset = torchvision.datasets.CIFAR10(root="../../data/cifar10", train=True, 
-                                        download=True, transform=transform)
+trainset = torchvision.datasets.LSUN(
+    root="../../data/lsun",  # we set lsun root directory
+    classes=["bedroom_train"],  # we use bedroom training subset
+    transform=transform  # we apply preprocessing transforms
+)
+print(f"\nloaded lsun bedroom_train: {len(trainset)} images")  # we log lsun subset size
 
-# we filter dataset to keep only dog class (class 5)
-# cifar10 classes: 0=airplane, 1=automobile, 2=bird, 3=cat, 4=deer, 5=dog, 6=frog, 7=horse, 8=ship, 9=truck
-target_class = 5  # we select dog class
-dog_indices = [i for i in range(len(trainset)) if trainset.targets[i] == target_class]
-print(f"\nfiltered dataset to class 'dog': {len(dog_indices)} images (out of {len(trainset)} total)")
-
-# we create data iterator that only samples from dog images
+# we create data iterator that only samples from lsun bedroom images
 def get_cifar_batch(bs):
-    """we get a batch of cifar10 dog images only"""
-    indices = torch.randint(0, len(dog_indices), (bs,))
-    imgs = torch.stack([trainset[dog_indices[i]][0] for i in indices])
-    return imgs.to(itf.util.get_torch_device())
+    """we get a batch of lsun bedroom images only"""
+    indices = torch.randint(0, len(trainset), (bs,))  # we sample random indices
+    imgs = torch.stack([trainset[i][0] for i in indices])  # we stack selected images
+    return imgs.to(itf.util.get_torch_device())  # we move batch to device
 
 # we create masking function for patches
 def create_patch_mask(bs, patch_size=8, num_patches=4):
@@ -60,197 +59,162 @@ def create_patch_mask(bs, patch_size=8, num_patches=4):
             mask[i, :, x:x+patch_size, y:y+patch_size] = 0  # we mask the patch
     return mask.to(itf.util.get_torch_device())
 
+class SinusoidalTimeEmbedding(nn.Module):
+    """we build sinusoidal positional embeddings for scalar time"""  # we describe time embedding
+    def __init__(self, embedding_dim: int, max_period: float = 10000.0) -> None:
+        super().__init__()  # we call parent constructor
+        self.embedding_dim = embedding_dim  # we store embedding dimension
+        self.max_period = max_period  # we store maximum period
+    
+    def forward(self, t: torch.Tensor) -> torch.Tensor:
+        """we map scalar timesteps to sinusoidal embeddings"""  # we describe forward
+        if not isinstance(t, torch.Tensor):  # we convert non-tensor to tensor
+            t_tensor = torch.tensor(t, dtype=torch.float32)  # we build tensor from scalar or array
+        else:
+            t_tensor = t.float()  # we cast to float
+        if t_tensor.dim() == 0:  # we handle scalar time
+            t_tensor = t_tensor[None]  # we add batch dimension
+        if t_tensor.dim() == 2 and t_tensor.shape[1] == 1:  # we squeeze singleton feature dimension
+            t_tensor = t_tensor[:, 0]  # we reduce to shape [bs]
+        device = t_tensor.device  # we get device
+        half_dim = self.embedding_dim // 2  # we compute half dimension
+        if half_dim < 1:  # we guard against invalid configuration
+            raise ValueError("we expect embedding_dim to be at least 2")  # we raise error for tiny dims
+        exponent = -torch.log(torch.tensor(self.max_period, device=device)) / float(half_dim - 1)  # we compute exponent
+        freqs = torch.exp(torch.arange(half_dim, device=device, dtype=torch.float32) * exponent)  # we build frequencies
+        args = t_tensor.view(-1, 1) * freqs.view(1, -1)  # we build outer product of time and frequencies
+        emb = torch.cat([torch.sin(args), torch.cos(args)], dim=-1)  # we concatenate sin and cos
+        if self.embedding_dim % 2 == 1:  # we pad for odd dimension
+            emb = torch.nn.functional.pad(emb, (0, 1))  # we add one zero dimension
+        return emb  # we return embeddings
+
+
+class TimeResBlock(nn.Module):
+    """we define residual block modulated by time embedding"""  # we describe residual block
+    def __init__(self, in_channels: int, out_channels: int, time_dim: int, stride: int = 1) -> None:
+        super().__init__()  # we call parent constructor
+        self.in_channels = in_channels  # we store input channels
+        self.out_channels = out_channels  # we store output channels
+        self.conv1 = nn.Conv2d(in_channels, out_channels, 3, stride=stride, padding=1)  # we define first conv
+        self.norm1 = nn.GroupNorm(8, out_channels)  # we define first group norm
+        self.conv2 = nn.Conv2d(out_channels, out_channels, 3, padding=1)  # we define second conv
+        self.norm2 = nn.GroupNorm(8, out_channels)  # we define second group norm
+        self.act = nn.ReLU()  # we define activation
+        self.time_mlp = nn.Linear(time_dim, out_channels)  # we define linear layer for time embedding
+        if stride != 1 or in_channels != out_channels:  # we check if skip connection must project
+            self.skip = nn.Conv2d(in_channels, out_channels, 1, stride=stride)  # we define skip projection
+        else:
+            self.skip = nn.Identity()  # we define identity skip
+    
+    def forward(self, x: torch.Tensor, t_emb: torch.Tensor) -> torch.Tensor:
+        """we apply residual block given time embedding"""  # we describe forward
+        h = self.conv1(x)  # we apply first convolution
+        h = self.norm1(h)  # we normalize
+        h = self.act(h)  # we activate
+        time_out = self.time_mlp(t_emb).view(t_emb.shape[0], self.out_channels, 1, 1)  # we project time embedding
+        h = h + time_out  # we inject time information
+        h = self.conv2(h)  # we apply second convolution
+        h = self.norm2(h)  # we normalize
+        h = self.act(h)  # we activate
+        return h + self.skip(x)  # we add residual connection
+
+
 # we define u-net style convolutional denoiser for image reconstruction
 class UNetDenoiser(nn.Module):
-    """we use u-net architecture with skip connections for image reconstruction"""
-    def __init__(self, in_channels=4, out_channels=3, base_channels=64):
-        super().__init__()
+    """we use u-net architecture with time-conditioned residual blocks for image reconstruction"""  # we describe unet
+    def __init__(self, in_channels: int = 3, out_channels: int = 3, base_channels: int = 64, time_dim: int = 256) -> None:
+        super().__init__()  # we call parent constructor
         
-        # we define encoder (downsampling path)
-        self.enc1 = nn.Sequential(
-            nn.Conv2d(in_channels, base_channels, 3, padding=1),
-            nn.GroupNorm(8, base_channels),
-            nn.ReLU(),
-            nn.Conv2d(base_channels, base_channels, 3, padding=1),
-            nn.GroupNorm(8, base_channels),
-            nn.ReLU()
-        )
+        self.time_embedding = SinusoidalTimeEmbedding(time_dim)  # we build sinusoidal time encoder
+        self.time_mlp = nn.Sequential(  # we refine time embedding
+            nn.Linear(time_dim, time_dim),  # we apply linear projection
+            nn.SiLU(),  # we apply nonlinearity
+            nn.Linear(time_dim, time_dim),  # we apply second projection
+        )  # we define time mlp
         
-        self.enc2 = nn.Sequential(
-            nn.Conv2d(base_channels, base_channels*2, 3, stride=2, padding=1),
-            nn.GroupNorm(8, base_channels*2),
-            nn.ReLU(),
-            nn.Conv2d(base_channels*2, base_channels*2, 3, padding=1),
-            nn.GroupNorm(8, base_channels*2),
-            nn.ReLU()
-        )
-        
-        self.enc3 = nn.Sequential(
-            nn.Conv2d(base_channels*2, base_channels*4, 3, stride=2, padding=1),
-            nn.GroupNorm(8, base_channels*4),
-            nn.ReLU(),
-            nn.Conv2d(base_channels*4, base_channels*4, 3, padding=1),
-            nn.GroupNorm(8, base_channels*4),
-            nn.ReLU()
-        )
+        # we define encoder (downsampling path) with time-conditioned residual blocks
+        self.enc1 = TimeResBlock(in_channels, base_channels, time_dim, stride=1)  # we define first encoder block
+        self.enc2 = TimeResBlock(base_channels, base_channels * 2, time_dim, stride=2)  # we define second encoder block
+        self.enc3 = TimeResBlock(base_channels * 2, base_channels * 4, time_dim, stride=2)  # we define third encoder block
         
         # we define bottleneck
-        self.bottleneck = nn.Sequential(
-            nn.Conv2d(base_channels*4, base_channels*8, 3, stride=2, padding=1),
-            nn.GroupNorm(8, base_channels*8),
-            nn.ReLU(),
-            nn.Conv2d(base_channels*8, base_channels*8, 3, padding=1),
-            nn.GroupNorm(8, base_channels*8),
-            nn.ReLU()
-        )
+        self.bottleneck = TimeResBlock(base_channels * 4, base_channels * 8, time_dim, stride=2)  # we define bottleneck block
         
-        # we define decoder (upsampling path) with skip connections
-        self.dec3 = nn.Sequential(
-            nn.ConvTranspose2d(base_channels*8, base_channels*4, 3, stride=2, padding=1, output_padding=1),
-            nn.GroupNorm(8, base_channels*4),
-            nn.ReLU()
-        )
-        self.dec3_conv = nn.Sequential(
-            nn.Conv2d(base_channels*8, base_channels*4, 3, padding=1),
-            nn.GroupNorm(8, base_channels*4),
-            nn.ReLU(),
-            nn.Conv2d(base_channels*4, base_channels*4, 3, padding=1),
-            nn.GroupNorm(8, base_channels*4),
-            nn.ReLU()
-        )
+        # we define decoder (upsampling path) with skip connections and time-conditioned residual blocks
+        self.dec3_up = nn.ConvTranspose2d(
+            base_channels * 8, base_channels * 4, 3, stride=2, padding=1, output_padding=1
+        )  # we upsample from bottleneck
+        self.dec3_block = TimeResBlock(base_channels * 8, base_channels * 4, time_dim, stride=1)  # we refine with skip from enc3
         
-        self.dec2 = nn.Sequential(
-            nn.ConvTranspose2d(base_channels*4, base_channels*2, 3, stride=2, padding=1, output_padding=1),
-            nn.GroupNorm(8, base_channels*2),
-            nn.ReLU()
-        )
-        self.dec2_conv = nn.Sequential(
-            nn.Conv2d(base_channels*4, base_channels*2, 3, padding=1),
-            nn.GroupNorm(8, base_channels*2),
-            nn.ReLU(),
-            nn.Conv2d(base_channels*2, base_channels*2, 3, padding=1),
-            nn.GroupNorm(8, base_channels*2),
-            nn.ReLU()
-        )
+        self.dec2_up = nn.ConvTranspose2d(
+            base_channels * 4, base_channels * 2, 3, stride=2, padding=1, output_padding=1
+        )  # we upsample
+        self.dec2_block = TimeResBlock(base_channels * 4, base_channels * 2, time_dim, stride=1)  # we refine with skip from enc2
         
-        self.dec1 = nn.Sequential(
-            nn.ConvTranspose2d(base_channels*2, base_channels, 3, stride=2, padding=1, output_padding=1),
-            nn.GroupNorm(8, base_channels),
-            nn.ReLU()
-        )
-        self.dec1_conv = nn.Sequential(
-            nn.Conv2d(base_channels*2, base_channels, 3, padding=1),
-            nn.GroupNorm(8, base_channels),
-            nn.ReLU(),
-            nn.Conv2d(base_channels, base_channels, 3, padding=1),
-            nn.GroupNorm(8, base_channels),
-            nn.ReLU()
-        )
+        self.dec1_up = nn.ConvTranspose2d(
+            base_channels * 2, base_channels, 3, stride=2, padding=1, output_padding=1
+        )  # we upsample
+        self.dec1_block = TimeResBlock(base_channels * 2, base_channels, time_dim, stride=1)  # we refine with skip from enc1
         
         # we define final output layer
-        self.final = nn.Conv2d(base_channels, out_channels, 1)
+        self.final = nn.Conv2d(base_channels, out_channels, 1)  # we project to rgb
     
-    def forward(self, x_with_t):
-        """we forward pass with skip connections"""
+    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        """we forward pass with time-conditioned residual blocks"""  # we describe forward
+        t_emb = self.time_embedding(t.to(x.device))  # we build sinusoidal time embedding
+        t_emb = self.time_mlp(t_emb)  # we refine time embedding
+        
         # we encode
-        e1 = self.enc1(x_with_t)
-        e2 = self.enc2(e1)
-        e3 = self.enc3(e2)
+        e1 = self.enc1(x, t_emb)  # we apply first encoder block
+        e2 = self.enc2(e1, t_emb)  # we apply second encoder block
+        e3 = self.enc3(e2, t_emb)  # we apply third encoder block
         
         # we process bottleneck
-        b = self.bottleneck(e3)
+        b = self.bottleneck(e3, t_emb)  # we apply bottleneck block
         
         # we decode with skip connections
-        d3 = self.dec3(b)
-        d3 = torch.cat([d3, e3], dim=1)
-        d3 = self.dec3_conv(d3)
+        d3 = self.dec3_up(b)  # we upsample from bottleneck
+        d3 = torch.cat([d3, e3], dim=1)  # we concatenate skip connection from encoder level 3
+        d3 = self.dec3_block(d3, t_emb)  # we apply decoder block 3
         
-        d2 = self.dec2(d3)
-        d2 = torch.cat([d2, e2], dim=1)
-        d2 = self.dec2_conv(d2)
+        d2 = self.dec2_up(d3)  # we upsample
+        d2 = torch.cat([d2, e2], dim=1)  # we concatenate skip from encoder level 2
+        d2 = self.dec2_block(d2, t_emb)  # we apply decoder block 2
         
-        d1 = self.dec1(d2)
-        d1 = torch.cat([d1, e1], dim=1)
-        d1 = self.dec1_conv(d1)
+        d1 = self.dec1_up(d2)  # we upsample
+        d1 = torch.cat([d1, e1], dim=1)  # we concatenate skip from encoder level 1
+        d1 = self.dec1_block(d1, t_emb)  # we apply decoder block 1
         
         # we output final reconstruction
-        out = self.final(d1)
-        return out
+        out = self.final(d1)  # we map to rgb
+        return out  # we return reconstructed image
 
 # we define wrapper for eta network to match expected interface
 class EtaNetwork(nn.Module):
-    """we wrap unet to accept separate (x, t) inputs"""
-    def __init__(self, unet):
-        super().__init__()
+    """we wrap unet to accept flattened x and scalar time inputs"""  # we describe eta wrapper
+    def __init__(self, unet: nn.Module) -> None:
+        super().__init__()  # we call parent constructor
         self.unet = unet  # we store underlying unet
     
-    def forward(self, x, t):
-        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""
+    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
         x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
-        
-        if not isinstance(t, torch.Tensor):  # we convert non-tensor time to tensor
-            t_tensor = torch.tensor(t, device=x.device, dtype=x.dtype)
-        else:
-            t_tensor = t.to(x.device)  # we move time tensor to same device as x
-        
-        if t_tensor.dim() == 0:  # we handle scalar time
-            t_batch = t_tensor.repeat(bs).unsqueeze(1)  # we repeat scalar t over batch
-        elif t_tensor.dim() == 1:  # we handle vector time
-            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast single time value to batch
-                t_batch = t_tensor.repeat(bs).unsqueeze(1)
-            else:
-                t_batch = t_tensor.unsqueeze(1)  # we add feature dimension
-        elif t_tensor.dim() == 2:  # we handle matrix-shaped time
-            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast row to batch
-                t_batch = t_tensor.repeat(bs, 1)
-            else:
-                t_batch = t_tensor  # we assume proper shape [bs, 1]
-        else:
-            raise ValueError("we expect time tensor of dimension at most 2")
-        
-        t_channel = t_batch.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)  # we broadcast time as extra channel
-        x_with_t = torch.cat([x_img, t_channel], dim=1)  # we concatenate time as 4th channel
-        
-        out = self.unet(x_with_t)  # we run unet
+        out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
 # we define velocity field wrapper
 class VelocityNetwork(nn.Module):
-    """we wrap unet for velocity field b with separate (x, t) inputs"""
-    def __init__(self, unet):
-        super().__init__()
+    """we wrap unet for velocity field b with flattened x and scalar time inputs"""  # we describe velocity wrapper
+    def __init__(self, unet: nn.Module) -> None:
+        super().__init__()  # we call parent constructor
         self.unet = unet  # we store underlying unet
     
-    def forward(self, x, t):
-        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""
+    def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
         x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
-        
-        if not isinstance(t, torch.Tensor):  # we convert non-tensor time to tensor
-            t_tensor = torch.tensor(t, device=x.device, dtype=x.dtype)
-        else:
-            t_tensor = t.to(x.device)  # we move time tensor to same device as x
-        
-        if t_tensor.dim() == 0:  # we handle scalar time
-            t_batch = t_tensor.repeat(bs).unsqueeze(1)  # we repeat scalar t over batch
-        elif t_tensor.dim() == 1:  # we handle vector time
-            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast single time value to batch
-                t_batch = t_tensor.repeat(bs).unsqueeze(1)
-            else:
-                t_batch = t_tensor.unsqueeze(1)  # we add feature dimension
-        elif t_tensor.dim() == 2:  # we handle matrix-shaped time
-            if t_tensor.shape[0] == 1 and bs > 1:  # we broadcast row to batch
-                t_batch = t_tensor.repeat(bs, 1)
-            else:
-                t_batch = t_tensor  # we assume proper shape [bs, 1]
-        else:
-            raise ValueError("we expect time tensor of dimension at most 2")
-        
-        t_channel = t_batch.view(bs, 1, 1, 1).expand(bs, 1, 32, 32)  # we broadcast time as extra channel
-        x_with_t = torch.cat([x_img, t_channel], dim=1)  # we concatenate time as 4th channel
-        
-        out = self.unet(x_with_t)  # we run unet
+        out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
 # we define training step function
@@ -467,8 +431,8 @@ if __name__ == "__main__":
             
             # we create networks
             print("\ncreating u-net architectures...")  # we notify network instantiation
-            unet_b = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)  # we create u-net for b
-            unet_eta = UNetDenoiser(in_channels=4, out_channels=3, base_channels=64)  # we create u-net for eta
+            unet_b = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for b
+            unet_eta = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for eta
             
             b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())  # we move b network to device
             eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())  # we move eta network to device
