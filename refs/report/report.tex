@@ -168,6 +168,124 @@ j'ai eu boffi en seminaire qui m'a dit que choisir le epsilon optimal est import
 
 
 
+\section{Pourquoi ajouter de la stochasticité ?}
+
+\subsection{Le score matching a bien fait de l'ajouter : biais inductif naturel}
+
+Passer de \emph{flow matching} à des modèles de diffusion n'est pas une généralisation hasardeuse. Mapper une distribution vers une autre via une dynamique déterministe, sans terme de bruit, relève du \emph{flow matching}. Le calcul stochastique montre que ce cadre déterministe est en réalité inclus dans une classe bien plus large de dynamiques probabilistes, décrites par des équations différentielles stochastiques (EDS). Dans cette classe, on transforme un problème de sampling purement ODE déterministe en un problème de type MCMC (par exemple de type Langevin), où la diffusion vient compléter le drift appris.
+
+L'ajout de stochasticité rend en particulier la transformation \emph{image $\leftrightarrow$ gaussienne} beaucoup plus naturelle : du point de vue du transport optimal, l'ajout de bruit gaussien est une généralisation cohérente pour relier une distribution complexe à une base simple (gaussienne). C'est précisément ce que font les modèles de diffusion et, auparavant, le denoising score matching.
+
+Un autre point fondamental est que, en écrivant l'équation backward associée à une EDS, on peut estimer le transport \emph{gaussienne $\rightarrow$ image} sans jamais expliciter toutes les distributions intermédiaires $p_\theta(t, x)$ : on apprend directement le \emph{score} $\nabla_x \log p_\theta(t, x)$, ce qui évite de paramétriser la densité elle‑même. L'usage du score, plutôt qu'une paramétrisation explicite de la densité (par exemple une mixture de gaussiennes), n'est donc pas un simple artefact d'analyse numérique permettant de compresser les queues de la distribution : c'est bien le score qui est la quantité minimale suffisante pour sampler une image dans ces modèles.
+
+\subsection{Régularisation et équations de transport}
+
+Apporter de la stochasticité a aussi un effet très désirable : une régularisation implicite de la qualité des échantillons. Un \emph{flow matching} mal appris peut transformer une image en une version où les détails fins sont dégradés ou déformés, sans mécanisme explicite pour corriger ces erreurs locales. À l'inverse, dans un modèle de diffusion, le \emph{débruitage successif} constitue le biais inductif central : ce que le modèle fait de mieux, conceptuellement, est de transformer une entrée bruitée en une version moins bruitée. L'image finale a donc, par construction, tendance à être moins bruitée et plus régulière, car chaque pas de la dynamique backward est un pas de débruitage.
+
+Ce phénomène s'explique bien en écrivant les équations de transport associées. D'un côté, on a une équation de transport pure (équation de continuité) pour le \emph{flow matching}, sans terme de diffusion. De l'autre, on a l'équation de Fokker–Planck associée à l'EDS, qui contient un terme de type équation de la chaleur. En avant dans le temps, l'équation de la chaleur
+\[
+\partial_t \rho(t, x) = \epsilon \Delta \rho(t, x)
+\]
+rend naturellement les distributions plus lisses : les pics se dissipent et la masse se répartit. En inversant la flèche du temps, l'équation backward correspondante a au contraire tendance à créer des pics dans la distribution. Ce biais inductif de l'équation de la chaleur (régularisation forward, “sharpening” backward) est au cœur de la différence entre dynamiques déterministes et stochastiques, et explique en partie pourquoi les modèles de diffusion produisent des échantillons visuellement plus réguliers qu'un flow matching naïf.
+
+Historiquement, ce chemin conceptuel — du score matching de Hyvärinen, aux denoising autoencoders de Vincent, puis aux modèles de diffusion de Song et Ermon et enfin aux interpolants stochastiques d'Albergo et al. — a été progressif, de 2015 à 2022, en affinant à chaque étape le rôle du bruit gaussien et du score dans la modélisation générative.
+
+\subsection{Limites du flow matching pur}
+
+Du point de vue des équations de transport, Albergo et al. montrent que, pour une équation de transport pure (sans terme diffusif), le simple fait d'approximer correctement le champ de vitesse $b$ ne suffit pas à contrôler la divergence de Kullback–Leibler entre la solution vraie et la solution approchée. De manière plus précise, ils écrivent (Lemma~21 dans~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{Lemma~21 shows that it is insufficient in general to match $\hat b$ with $b$ to obtain control on the $\mathsf{KL}$ divergence. The essence of the problem is that a small error in $\hat b - b$ does not ensure control on the Fisher divergence $\mathrm{FI}(\rho(t)\,\|\,\hat\rho(t)) = \int_{\mathbb{R}^d}\|\nabla\log\rho(t,x) - \nabla\log\hat \rho(t,x)\|^2\rho(t,x)\,dx$, which is necessary due to the presence of $(\nabla\log\hat\rho - \nabla\log\rho)$ in the expression of the $\mathsf{KL}$ divergence.}
+\end{quote}
+
+Autrement dit, faire “juste du flow matching” sur $b$ ne donne pas de contrôle suffisant sur la qualité statistique globale du modèle : il manque un contrôle explicite sur le score de la densité. C'est précisément ce manque que viennent combler les termes de diffusion et les objectifs quadratiques sur le score dans le cadre des stochastic interpolants.
+
+\section{Ce qu'apportent les stochastic interpolants}
+
+\subsection{Au‑delà du couplage gaussienne–image}
+
+Dans de nombreuses tâches d'IA qui ne sont pas purement génératives, on ne cherche pas à passer d'une gaussienne à une image, mais plutôt d'une image à une autre : par exemple transformer une image de singe bleu en singe vert, ou faire du color inpainting, changer la colorimétrie, ou encore modifier le style. Historiquement, ces problèmes ont souvent été modélisés comme des problèmes de \emph{transport optimal} dans un espace approprié (par exemple l'espace colorimétrique), ce qui fournit un cadre mathématique rigoureux.
+
+Cependant, le coût computationnel du transport optimal discret sur des grandes images est prohibitif : pour une image $1024\times 1024$, le plan de transport contient de l'ordre de $10^{12}$ coefficients, ce qui est intractable en pratique.
+
+Les stochastic interpolants cherchent à résoudre ce problème en apprenant directement un transport de distributions de manière paramétrique, sans construire explicitement un plan de transport. L'idée n'est plus de relier systématiquement une image à une gaussienne, puis une gaussienne à une autre image, mais d'apprendre un interpolant
+\[
+x_t = I(t, x_0, x_1) + \gamma(t)\,z,
+\]
+où $(x_0, x_1)$ sont deux échantillons tirés des distributions de départ et d'arrivée, et $z$ est un bruit gaussien.
+
+Dans ce cadre, le flow matching reste une réponse naturelle (on apprend un champ de vitesse $b$ qui transporte $x_t$), mais pour des tâches comme la colorimétrie ou l'édition locale d'images, la structure géométrique de l'image (pétales, fleur, pistil dans les exemples du papier) doit être respectée finement. Or, le flow matching pur n'excelle pas toujours sur ces détails : un champ de vitesse déterministe mal appris peut “froisser” la géométrie de l'image.
+
+De plus, le biais inductif d'une équation de transport (sans diffusion) n'est vraiment intéressant que dans un sens (par exemple pour lisser certaines structures), alors que pour du color inpainting on a besoin de contrôler les deux sens de la transformation. Cette asymétrie est difficile à gérer avec une simple équation de la chaleur qui, par nature, a un biais fort vers la régularisation.
+
+Albergo et al. insistent aussi sur le fait que, même si au niveau de la densité les dynamiques ODE, forward SDE et backward SDE peuvent définir le même chemin de distributions, leurs propriétés numériques et statistiques diffèrent. Ils écrivent par exemple (Remark~20 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{This is all that matters when applying these processes as generative models. However, the fact that these processes are different has implications for the accuracy of the numerical integration used to sample from them at any $t$ as well as for the propagation of statistical errors.}
+\end{quote}
+
+En pratique, le choix de la formulation (ODE vs SDE, niveau de bruit, etc.) influe donc sur la stabilité numérique, la propagation des erreurs et le compromis biais–variance du générateur.
+
+\subsection{Le rôle crucial du latent gaussien et du bruit}
+
+Un des points de génie des stochastic interpolants est l'interprétation unifiée : l'équation de la chaleur qu'on observe au niveau des densités provient d'une EDS au niveau des trajectoires, mais cette EDS peut être vue comme la superposition d'un \emph{Brownian bridge} et d'un transport déterministe. Plus précisément, si l'on pose l'ansatz
+\[
+x_t = I(t, x_0, x_1) + N_t,
+\]
+où $(N_t)_{t\in[0,1]}$ est un processus gaussien centré contraint par $N_0 = N_1 = 0$, alors on peut :
+
+\begin{itemize}
+    \item apprendre $I$ via un champ de vitesse de type neural ODE $b(t, x)$ (flow matching),
+    \item et moduler la stochasticité via un paramètre de diffusion $\epsilon$ dans l'EDS associée.
+\end{itemize}
+
+On obtient ainsi un cadre où l'on apprend simultanément $b$ et le score $s$, mais où l'on peut effectuer l'inférence (le sampling) à un niveau de bruit $\epsilon$ \emph{quelconque}, choisi a posteriori en fonction de la tâche. C'est là une utilité centrale des stochastic interpolants : ils séparent l'apprentissage du champ de vitesse et du score de la décision du niveau de stochasticité utilisé au moment du sampling.
+
+Les auteurs soulignent également le rôle du latent gaussien $\gamma(t) z$ pour la régularité spatiale de $b$ et $s$. Ils écrivent (Remark~11 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{If we set $\gamma(t) = 0$ in $x_t$ (i.e., if we remove the latent variable), the stochastic interpolant (2.1) reduces to the one originally considered in Albergo and Vanden-Eijnden (2023). In this setup, the results above formally stand except that we cannot guarantee the spatial regularity of $b_{\mathrm{ODE}}(t,x)$ and $s(t,x)$, since it relies on the presence of the latent variable (as shown in the proof of Theorem~6). Hence, we expect the introduction of the latent variable $\gamma(t) z$ to help for generative modeling, where the solution to the corresponding ODEs/SDEs will be better behaved, and for statistical approximation, since the targets $b$ and $s$ will be more regular. We will see in Section~6 that it also gives us much greater flexibility in the way we can bridge $\rho_0$ and $\rho_1$, which will enable us to design generative models with appealing properties.}
+\end{quote}
+
+Il y a donc un compromis clair entre :
+
+\begin{itemize}
+    \item une écriture “compressée” de type flow matching pur, où l'on apprend directement un champ $b$ reliant $x_0$ et $x_1$ (peu de bruit, mais plus sensible aux erreurs locales et à la discrétisation) ;
+    \item et l'écriture très détaillée des modèles de diffusion, qui offrent un contrôle très fin sur le score, mais sont historiquement formulés pour un chemin \emph{gaussienne $\leftrightarrow$ données}.
+\end{itemize}
+
+L'idée des stochastic interpolants est de proposer un compromis : au lieu de faire \emph{image $\to$ gaussienne $\to$ image}, on fait \emph{image$_1$ $\to$ “un peu gaussienne” $\to$ image$_2$}, en introduisant explicitement une troisième distribution intermédiaire contrôlée par $\gamma(t)$ et par la diffusion. On récupère ainsi le meilleur des deux mondes : une écriture relativement compressée (un interpolant $I$ et un seul latent gaussien) et la capacité de faire du sampling très précis sur les détails, comme dans un diffusion model.
+
+Albergo et al. insistent enfin sur le fait que les équations de Fokker–Planck forward/backward sont plus robustes que la simple équation de transport vis‑à‑vis des erreurs d'approximation sur $b$ et $s$. Ils écrivent (Remark~12 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{We will see in Section~2.4 that the forward and backward FPE in (2.20) and (2.22) are more robust than the TE in (2.9) against approximation errors in the velocity $b$ and the score $s$, which has practical implications for generative models based on these equations.}
+\end{quote}
+
+\subsection{Choix de $\epsilon$ et perspectives expérimentales}
+
+Dans le cadre des stochastic interpolants, on apprend en pratique un champ de vitesse $\hat b$ et un score $\hat s$, mais l'inférence peut ensuite être réalisée à un niveau de bruit $\epsilon$ arbitraire. Le choix de $\epsilon$ optimal n'est toutefois pas trivial. Les auteurs dérivent une borne supérieure sur la divergence de Kullback–Leibler qui conduit à un choix optimal théorique
+\[
+\epsilon^* = \left(\frac{\mathcal{L}_b[\hat b] - \min_{\hat b}\mathcal{L}_b[\hat b]}{\mathcal{L}_s[\hat s] - \min_{\hat s}\mathcal{L}_s[\hat s]}\right)^{1/2},
+\]
+mais en pratique les minima inconnus rendent cette formule difficile à utiliser directement.
+
+Dans la suite de notre travail, nous proposerons donc des expériences empiriques pour explorer ce choix de $\epsilon$ en fonction de la tâche (génération, colorimétrie, inpainting, etc.), en particulier pour voir dans quelle mesure il est possible de réduire drastiquement le nombre de pas d'intégration tout en restant “au bord” de la stabilité numérique.
+
+\section{Expériences}
+
+Lors d'un séminaire, Boffi nous a notamment souligné que le choix de $\epsilon$ optimal dépend fortement de la classe de problèmes considérée (par exemple en biologie structurale, pour des tâches de modélisation de protéines). En pratique, ajuster $\epsilon$ permet de diminuer significativement le nombre de pas d'intégration nécessaires et d'améliorer l'efficacité du sampling, tout en contrôlant la stabilité numérique.
+
+Dans nos expériences, nous étudierons systématiquement :
+
+\begin{itemize}
+    \item l'effet de $\epsilon$ sur la qualité des échantillons et la vitesse de convergence ;
+    \item le compromis entre robustesse (régime SDE avec $\epsilon>0$) et fidélité géométrique (régime ODE/flow matching avec $\epsilon \approx 0$) ;
+    \item la possibilité d'adapter $\epsilon$ à la difficulté locale du problème (par exemple, selon que l'on transporte entre distributions “spiky” ou “smooth”).
+\end{itemize}
+
+
+
 
 \paragraph{Remarks extracted from the paper.}
 We remarked in Section 6.1 that learning the denoiser $\eta_z$ is more numerically stable than learning the score $s$ directly. Our results suggest that learning the denoiser is best practice.
