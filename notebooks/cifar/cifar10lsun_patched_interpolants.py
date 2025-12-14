@@ -15,6 +15,10 @@ from typing import Tuple, Any
 import interflow as itf
 import interflow.stochastic_interpolant as stochastic_interpolant
 
+RESULTS_ROOT = os.path.join("vresults", "cifarpatchedinterpolants")
+DATASET_NAME = "cifar10_dog"
+EPSILON_TAG = "eps-none"
+
 if torch.cuda.is_available():
     print('cuda available, setting default tensor residence to gpu')
     itf.util.set_torch_device('cuda')
@@ -29,54 +33,289 @@ def grab(var):
     """we take a tensor off the gpu and convert it to a numpy array on the cpu"""
     return var.detach().cpu().numpy()
 
-def ensure_lsun_bedroom(lsun_root: str) -> None:
-    """we download and extract lsun bedroom_train_lmdb if missing"""  # we document lsun helper
+def ensure_lsun_bedroom(lsun_root: str, max_retries: int = 3, timeout: int = 300) -> bool:
+    """we download and extract lsun bedroom_train_lmdb if missing, returns True if successful"""  # we document lsun helper
+    print(f"[verbose] ensure_lsun_bedroom called with lsun_root={lsun_root}")  # we log function call
+    lsun_root_abs = os.path.abspath(lsun_root)  # we get absolute path
+    print(f"[verbose] absolute lsun_root path: {lsun_root_abs}")  # we log absolute path
     bedroom_lmdb_dir = os.path.join(lsun_root, "bedroom_train_lmdb")  # we build expected lmdb directory
+    bedroom_lmdb_dir_abs = os.path.abspath(bedroom_lmdb_dir)  # we get absolute path
+    print(f"[verbose] checking for existing bedroom_train_lmdb at: {bedroom_lmdb_dir_abs}")  # we log check
     if os.path.isdir(bedroom_lmdb_dir):  # we check if directory already exists
-        print(f"found existing lsun bedroom_train_lmdb at {bedroom_lmdb_dir}")  # we log existing dataset
-        return  # we skip download when present
+        print(f"[verbose] ✓ found existing lsun bedroom_train_lmdb at {bedroom_lmdb_dir_abs}")  # we log existing dataset
+        print(f"[verbose] directory contents: {os.listdir(bedroom_lmdb_dir_abs)[:5] if os.path.exists(bedroom_lmdb_dir_abs) else 'N/A'}")  # we log sample contents
+        return True  # we return success
     
+    print(f"[verbose] bedroom_train_lmdb directory not found, will attempt download")  # we log missing directory
+    print(f"[verbose] creating lsun_root directory: {lsun_root_abs}")  # we log directory creation
     os.makedirs(lsun_root, exist_ok=True)  # we ensure root directory exists
+    print(f"[verbose] ✓ lsun_root directory exists: {os.path.exists(lsun_root_abs)}")  # we verify creation
     url = "https://dl.yf.io/lsun/scenes/bedroom_train_lmdb.zip"  # we set official lsun download url
     zip_path = os.path.join(lsun_root, "bedroom_train_lmdb.zip")  # we choose local zip path
+    zip_path_abs = os.path.abspath(zip_path)  # we get absolute path
+    print(f"[verbose] download url: {url}")  # we log url
+    print(f"[verbose] zip output path: {zip_path_abs}")  # we log zip path
     
-    print(f"downloading lsun bedroom_train_lmdb from {url} to {zip_path} ...")  # we log download start
-    urllib.request.urlretrieve(url, zip_path)  # we download zip archive
-    print("download complete, extracting archive...")  # we log extraction start
+    # we check if zip file already exists from previous incomplete download
+    print(f"[verbose] checking for existing zip file at: {zip_path_abs}")  # we log zip check
+    if os.path.exists(zip_path):  # we check for existing zip
+        zip_size = os.path.getsize(zip_path) / (1024**3)  # we get file size in GB
+        print(f"[verbose] ✓ found existing zip file at {zip_path_abs}, size: {zip_size:.2f} GB")  # we log existing zip
+        print(f"[verbose] attempting to extract existing zip file...")  # we log extraction attempt
+        try:  # we try to extract existing zip
+            print(f"[verbose] opening zip file for integrity check...")  # we log zip open
+            with zipfile.ZipFile(zip_path, "r") as zf:  # we open zip file
+                print(f"[verbose] testing zip file integrity...")  # we log integrity test
+                zf.testzip()  # we verify zip integrity
+                print(f"[verbose] ✓ zip file is valid, extracting to {lsun_root_abs}...")  # we log validity
+                zf.extractall(lsun_root)  # we extract all contents into root
+                print(f"[verbose] extraction completed, verifying output...")  # we log verification
+            if os.path.isdir(bedroom_lmdb_dir):  # we check extraction success
+                print(f"[verbose] ✓ extraction successful, bedroom_train_lmdb directory created")  # we log success
+                os.remove(zip_path)  # we remove zip after successful extraction
+                print(f"[verbose] removed zip file {zip_path_abs}")  # we log removal
+                print(f"[verbose] lsun bedroom_train_lmdb ready at {bedroom_lmdb_dir_abs}")  # we log success
+                return True  # we return success
+            else:  # extraction failed to create directory
+                print(f"[verbose] ✗ extraction did not create bedroom_train_lmdb directory")  # we log failure
+        except Exception as e:  # we catch extraction errors
+            import traceback  # we import traceback for detailed error
+            print(f"[verbose] ✗ error with existing zip file: {e}")  # we log error
+            print(f"[verbose] full traceback:")  # we log traceback header
+            traceback.print_exc()  # we print full traceback
+            print(f"[verbose] removing corrupted zip file and will attempt re-download")  # we log removal
+            os.remove(zip_path)  # we remove corrupted zip
+    else:  # no existing zip
+        print(f"[verbose] no existing zip file found")  # we log no zip
     
-    with zipfile.ZipFile(zip_path, "r") as zf:  # we open zip file
-        zf.extractall(lsun_root)  # we extract all contents into root
+    # we attempt download with retries
+    print(f"[verbose] starting download process")  # we log download start
+    print(f"downloading lsun bedroom_train_lmdb from {url} ...")  # we log download start
+    print(f"warning: this is a large file (~42GB), download may take a long time")  # we warn about size
+    print(f"[verbose] using timeout={timeout}s per attempt, max_retries={max_retries}")  # we log retry settings
     
-    os.remove(zip_path)  # we remove zip file after extraction
-    print(f"lsun bedroom_train_lmdb extracted to {bedroom_lmdb_dir}")  # we log extraction location
+    for attempt in range(1, max_retries + 1):  # we attempt download multiple times
+        print(f"[verbose] === download attempt {attempt}/{max_retries} ===")  # we log attempt start
+        try:  # we wrap download in try-except
+            print(f"[verbose] creating url request...")  # we log request creation
+            def show_progress(block_num, block_size, total_size):  # we define progress callback
+                downloaded = block_num * block_size  # we compute downloaded bytes
+                if total_size > 0:  # we check if size is known
+                    percent = min(downloaded * 100.0 / total_size, 100.0)  # we compute percentage
+                    print(f"\r[attempt {attempt}/{max_retries}] download progress: {percent:.1f}% ({downloaded / (1024**3):.2f} GB / {total_size / (1024**3):.2f} GB)", end="", flush=True)  # we print progress
+                else:  # size unknown
+                    print(f"\r[attempt {attempt}/{max_retries}] downloaded: {downloaded / (1024**3):.2f} GB", end="", flush=True)  # we print progress without percentage
+            
+            # we create request with timeout
+            request = urllib.request.Request(url)  # we create request
+            print(f"[verbose] opening url connection with timeout={timeout}s...")  # we log connection attempt
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # we open connection with timeout
+                print(f"[verbose] ✓ connection established, status: {response.getcode()}")  # we log connection success
+                response_headers = dict(response.headers)  # we get response headers
+                print(f"[verbose] response headers: {list(response_headers.keys())}")  # we log header keys
+                total_size = int(response.headers.get("Content-Length", 0))  # we get total size from headers
+                if total_size > 0:  # we check if size known
+                    print(f"[verbose] total file size: {total_size / (1024**3):.2f} GB")  # we log file size
+                else:  # size unknown
+                    print(f"[verbose] warning: content-length not provided, cannot show percentage")  # we warn about unknown size
+                print(f"[verbose] opening output file: {zip_path_abs}")  # we log file open
+                with open(zip_path, "wb") as f:  # we open output file
+                    downloaded = 0  # we initialize downloaded counter
+                    block_size = 8192  # we set block size for reading
+                    chunk_count = 0  # we initialize chunk counter
+                    print(f"[verbose] starting to read data in {block_size} byte chunks...")  # we log read start
+                    while True:  # we read in chunks
+                        chunk = response.read(block_size)  # we read chunk
+                        if not chunk:  # we check if done
+                            print(f"[verbose] reached end of stream after {chunk_count} chunks")  # we log completion
+                            break  # we exit loop
+                        f.write(chunk)  # we write chunk
+                        downloaded += len(chunk)  # we update downloaded counter
+                        chunk_count += 1  # we increment chunk counter
+                        if chunk_count % 10000 == 0:  # we log every 10000 chunks to avoid spam
+                            if total_size > 0:  # we show progress if size known
+                                percent = min(downloaded * 100.0 / total_size, 100.0)  # we compute percentage
+                                print(f"\r[attempt {attempt}/{max_retries}] download progress: {percent:.1f}% ({downloaded / (1024**3):.2f} GB / {total_size / (1024**3):.2f} GB) [chunks: {chunk_count}]", end="", flush=True)  # we print progress
+                            else:  # size unknown
+                                print(f"\r[attempt {attempt}/{max_retries}] downloaded: {downloaded / (1024**3):.2f} GB [chunks: {chunk_count}]", end="", flush=True)  # we print progress
+                    if total_size > 0:  # we show final progress
+                        percent = min(downloaded * 100.0 / total_size, 100.0)  # we compute final percentage
+                        print(f"\r[attempt {attempt}/{max_retries}] download progress: {percent:.1f}% ({downloaded / (1024**3):.2f} GB / {total_size / (1024**3):.2f} GB) [chunks: {chunk_count}]")  # we print final progress
+                    else:  # size unknown
+                        print(f"\r[attempt {attempt}/{max_retries}] downloaded: {downloaded / (1024**3):.2f} GB [chunks: {chunk_count}]")  # we print final progress
+            print(f"[verbose] ✓ download complete (attempt {attempt})!")  # we confirm download completion
+            final_size = os.path.getsize(zip_path) / (1024**3)  # we get final file size
+            print(f"[verbose] downloaded file size: {final_size:.2f} GB")  # we log final size
+            break  # we exit retry loop on success
+        except Exception as e:  # we catch download errors
+            import traceback  # we import traceback for detailed error
+            print(f"\n[verbose] ✗ error on attempt {attempt}/{max_retries}: {e}")  # we log error
+            print(f"[verbose] error type: {type(e).__name__}")  # we log error type
+            print(f"[verbose] full traceback:")  # we log traceback header
+            traceback.print_exc()  # we print full traceback
+            if os.path.exists(zip_path):  # we check if partial file exists
+                partial_size = os.path.getsize(zip_path) / (1024**3)  # we get partial size
+                print(f"[verbose] removing partial file ({partial_size:.2f} GB)...")  # we log removal
+                os.remove(zip_path)  # we remove corrupted partial file
+                print(f"[verbose] ✓ partial file removed")  # we confirm removal
+            if attempt < max_retries:  # we check if more retries available
+                print(f"[verbose] waiting 5 seconds before retry...")  # we log retry wait
+                time.sleep(5)  # we wait before retry
+            else:  # all retries exhausted
+                print(f"[verbose] ✗ failed to download after {max_retries} attempts")  # we log final failure
+                return False  # we return failure   
+    
+    # we verify zip file exists and is valid
+    print(f"[verbose] verifying zip file exists...")  # we log verification
+    if not os.path.exists(zip_path):  # we check zip existence
+        print(f"[verbose] ✗ zip file not found at {zip_path_abs} after download attempts")  # we log error
+        return False  # we return failure
+    zip_size = os.path.getsize(zip_path) / (1024**3)  # we get zip size
+    print(f"[verbose] ✓ zip file exists at {zip_path_abs}, size: {zip_size:.2f} GB")  # we log zip exists
+    
+    print(f"[verbose] extracting archive from {zip_path_abs} to {lsun_root_abs}...")  # we log extraction start
+    try:  # we wrap extraction in try-except
+        print(f"[verbose] opening zip file for extraction...")  # we log zip open
+        with zipfile.ZipFile(zip_path, "r") as zf:  # we open zip file
+            file_list = zf.namelist()  # we get file list
+            print(f"[verbose] zip contains {len(file_list)} files/directories")  # we log file count
+            if len(file_list) > 0:  # we check if files exist
+                print(f"[verbose] sample files (first 5): {file_list[:5]}")  # we log sample files
+            print(f"[verbose] extracting all files...")  # we log extraction start
+            zf.extractall(lsun_root)  # we extract all contents into root
+            print(f"[verbose] ✓ extraction completed")  # we confirm extraction
+    except Exception as e:  # we catch extraction errors
+        import traceback  # we import traceback for detailed error
+        print(f"[verbose] ✗ error extracting zip file: {e}")  # we log error
+        print(f"[verbose] error type: {type(e).__name__}")  # we log error type
+        print(f"[verbose] full traceback:")  # we log traceback header
+        traceback.print_exc()  # we print full traceback
+        return False  # we return failure
+    
+    # we verify extraction succeeded
+    print(f"[verbose] verifying extraction succeeded...")  # we log verification
+    if not os.path.isdir(bedroom_lmdb_dir):  # we check if directory was created
+        print(f"[verbose] ✗ extraction did not create expected directory {bedroom_lmdb_dir_abs}")  # we log error
+        print(f"[verbose] contents of lsun_root: {os.listdir(lsun_root_abs) if os.path.exists(lsun_root_abs) else 'N/A'}")  # we log root contents
+        return False  # we return failure
+    print(f"[verbose] ✓ bedroom_train_lmdb directory created at {bedroom_lmdb_dir_abs}")  # we log success
+    dir_contents = os.listdir(bedroom_lmdb_dir_abs)  # we get directory contents
+    print(f"[verbose] directory contains {len(dir_contents)} items")  # we log item count
+    if len(dir_contents) > 0:  # we check if items exist
+        print(f"[verbose] sample contents (first 5): {dir_contents[:5]}")  # we log sample contents
+    
+    # we remove zip file after successful extraction
+    print(f"[verbose] removing zip file after successful extraction...")  # we log removal start
+    if os.path.exists(zip_path):  # we check zip still exists
+        os.remove(zip_path)  # we remove zip file after extraction
+        print(f"[verbose] ✓ removed zip file {zip_path_abs}")  # we log removal
+    else:  # zip already removed
+        print(f"[verbose] zip file already removed")  # we log already removed
+    
+    print(f"[verbose] ✓ lsun bedroom_train_lmdb ready at {bedroom_lmdb_dir_abs}")  # we log success
+    return True  # we return success
 
 
-# we load lsun dataset (bedroom class)
+# we load celebA dataset
+print(f"[verbose] === starting dataset loading process ===")  # we log start
 transform = transforms.Compose([
-    transforms.Resize((32, 32)),  # we resize lsun images to 32x32
+    transforms.Resize((32, 32)),  # we resize celebA images to 32x32
     transforms.ToTensor(),  # we convert images to tensors
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize channels
 ])
 
-lsun_root = "../../data/lsun"  # we set lsun root directory
-ensure_lsun_bedroom(lsun_root)  # we ensure lsun bedroom lmdb exists
+max_samples = None  # we set max samples to None (use all), set to int to limit dataset size (e.g., 5000)
+print(f"[verbose] max_samples: {max_samples}")  # we log max samples
 
-trainset = torchvision.datasets.LSUN(
-    root=lsun_root,  # we set lsun root directory
-    classes=["bedroom_train"],  # we use bedroom training subset
-    transform=transform  # we apply preprocessing transforms
-)
-print(f"\nloaded lsun bedroom_train: {len(trainset)} images")  # we log lsun subset size
+# we load celebA dataset
+celebA_root = "../../data/celeba"  # we set celebA root directory
+print(f"[verbose] loading celebA dataset...")  # we log celebA load
+print(f"[verbose] celebA root: {os.path.abspath(celebA_root)}")  # we log celebA root
+print(f"[verbose] using transform: Resize(32x32) -> ToTensor -> Normalize")  # we log transform
 
-# we create data iterator that only samples from lsun bedroom images
+# we check if gdown is needed and try to install it
+try:  # we try to import gdown
+    import gdown  # we check if gdown is available
+    print(f"[verbose] ✓ gdown is already installed")  # we log gdown available
+except ImportError:  # gdown not installed
+    print(f"[verbose] gdown not found, attempting to install...")  # we log installation attempt
+    try:  # we try to install gdown
+        import subprocess  # we import subprocess for pip install
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "gdown", "--quiet"])  # we install gdown
+        print(f"[verbose] ✓ gdown installed successfully")  # we log success
+        import gdown  # we import gdown after installation
+    except Exception as install_error:  # installation failed
+        print(f"[verbose] ✗ failed to install gdown: {install_error}")  # we log installation failure
+        print(f"[verbose] will skip celebA and use cifar10 directly")  # we log skip
+
+try:  # we wrap in try-except for error handling
+    trainset = torchvision.datasets.CelebA(
+        root=celebA_root,  # we set celebA root directory
+        split="train",  # we use training split
+        download=True,  # we allow automatic download
+        transform=transform  # we apply preprocessing transforms
+    )  # we load celebA
+    print(f"[verbose] ✓ celebA loaded successfully")  # we log success
+    print(f"\nloaded celebA train: {len(trainset)} images")  # we log celebA size
+    if max_samples is not None:  # we check if limiting samples
+        print(f"[verbose] limiting to first {max_samples} samples for faster training/testing...")  # we log limitation
+        trainset = torch.utils.data.Subset(trainset, list(range(min(max_samples, len(trainset)))))  # we limit subset
+        print(f"[verbose] ✓ limited trainset size: {len(trainset)} images")  # we log limited size
+        print(f"using subset of {len(trainset)} images")  # we log final size
+except Exception as e:  # we catch loading errors
+    import traceback  # we import traceback for detailed error
+    print(f"[verbose] ✗ error loading celebA: {e}")  # we log error
+    print(f"[verbose] error type: {type(e).__name__}")  # we log error type
+    print(f"[verbose] full traceback:")  # we log traceback header
+    traceback.print_exc()  # we print full traceback
+    print(f"\nwarning: celebA loading failed, falling back to cifar10 dog class")  # we warn about fallback
+    # we fall back to cifar10
+    print(f"[verbose] loading cifar10 dataset...")  # we log cifar10 load
+    transform_cifar = transforms.Compose([
+        transforms.ToTensor(),  # we convert to tensor
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize
+    ])
+    cifar10_root = "../../data/cifar10"  # we set cifar10 root
+    print(f"[verbose] cifar10 root: {os.path.abspath(cifar10_root)}")  # we log cifar10 root
+    try:  # we wrap cifar10 loading in try-except
+        trainset_cifar = torchvision.datasets.CIFAR10(
+            root=cifar10_root, train=True, download=True, transform=transform_cifar
+        )  # we load cifar10
+        print(f"[verbose] ✓ cifar10 loaded, total images: {len(trainset_cifar)}")  # we log cifar10 size
+        target_class = 5  # we select dog class
+        print(f"[verbose] filtering for class {target_class} (dog)...")  # we log filtering
+        dog_indices = [i for i in range(len(trainset_cifar)) if trainset_cifar.targets[i] == target_class]  # we filter dog images
+        print(f"[verbose] ✓ found {len(dog_indices)} dog images")  # we log dog count
+        print(f"using cifar10 dog class: {len(dog_indices)} images")  # we log cifar10 size
+        trainset = torch.utils.data.Subset(trainset_cifar, dog_indices)  # we create subset
+        print(f"[verbose] created subset with {len(trainset)} images")  # we log subset size
+        if max_samples is not None:  # we check if limiting samples
+            print(f"[verbose] limiting to first {max_samples} samples...")  # we log limitation
+            trainset = torch.utils.data.Subset(trainset, list(range(min(max_samples, len(trainset)))))  # we limit subset size
+            print(f"[verbose] ✓ final trainset size: {len(trainset)} images")  # we log final size
+    except Exception as cifar_error:  # we catch cifar10 loading errors
+        import traceback  # we import traceback for detailed error
+        print(f"[verbose] ✗ error loading cifar10: {cifar_error}")  # we log error
+        print(f"[verbose] error type: {type(cifar_error).__name__}")  # we log error type
+        print(f"[verbose] full traceback:")  # we log traceback header
+        traceback.print_exc()  # we print full traceback
+        print(f"\nerror: both celebA and cifar10 loading failed")  # we log final error
+        print(f"please check your network connection or download datasets manually")  # we suggest manual download
+        raise  # we re-raise exception to stop execution
+
+# we create data iterator that only samples from dataset images
+print(f"[verbose] === dataset loading complete ===")  # we log completion
+print(f"[verbose] final trainset size: {len(trainset)} images")  # we log final size
+print(f"[verbose] device: {itf.util.get_torch_device()}")  # we log device
+
 def get_cifar_batch(bs):
-    """we get a batch of lsun bedroom images only"""
+    """we get a batch of dataset images"""
     indices = torch.randint(0, len(trainset), (bs,))  # we sample random indices
     imgs = torch.stack([trainset[i][0] for i in indices])  # we stack selected images
     return imgs.to(itf.util.get_torch_device())  # we move batch to device
 
 # we create masking function for patches
-def create_patch_mask(bs, patch_size=8, num_patches=4):
+def create_patch_mask(bs, patch_size=6, num_patches=4):
     """we create random patch masks, 1 for visible pixels, 0 for masked patches"""
     mask = torch.ones(bs, 3, 32, 32)
     for i in range(bs):
@@ -303,9 +542,6 @@ def train_step(
     sched_eta.step()
     update_end = time.perf_counter()
     
-    if counter < 5:
-        print(f'[loss: {loss_end - loss_start:.4f}s], [backprop: {backprop_end-backprop_start:.4f}s], [update: {update_end-update_start:.4f}s]')
-    
     return loss_val.detach(), loss_b.detach(), loss_eta.detach(), b_grad.detach(), eta_grad.detach()
 
 # we define visualization function
@@ -316,64 +552,117 @@ def make_plots(
     counter: int,
     data_dict: dict,
     patch_size: int,
-    num_patches: int
+    num_patches: int,
+    n_params_b: int = None,
+    n_params_eta: int = None,
+    image_size: tuple = (32, 32),
+    batch_size: int = None,
+    base_lr: float = None,
+    metrics_freq: int = 100,
+    dataset_name: str = DATASET_NAME,
+    epsilon_tag: str = EPSILON_TAG,
+    results_root: str = RESULTS_ROOT,
 ):
     """we make plots to visualize reconstruction results"""
     print(f"\nepoch: {counter}")
+    path_name = interpolant.path  # we get interpolant path name
+    gamma_name = getattr(interpolant, "gamma_type", "none")  # we get gamma schedule name
     
-    # we get a batch for visualization
-    vis_bs = 8
-    x1s_img = get_cifar_batch(vis_bs)
-    masks = create_patch_mask(vis_bs, patch_size=patch_size, num_patches=num_patches)
+    # we clear gpu cache before visualization to free memory
+    if torch.cuda.is_available():  # we check if cuda is available
+        torch.cuda.empty_cache()  # we clear cuda cache
+        torch.cuda.synchronize()  # we synchronize to ensure cleanup is complete
+        allocated = torch.cuda.memory_allocated(0) / (1024**3)  # we get allocated memory in GB
+        reserved = torch.cuda.memory_reserved(0) / (1024**3)  # we get reserved memory in GB
+        total = torch.cuda.get_device_properties(0).total_memory / (1024**3)  # we get total memory in GB
+        print(f"[verbose] cleared cuda cache, allocated: {allocated:.2f} GB, reserved: {reserved:.2f} GB, total: {total:.2f} GB")  # we log memory info
     
-    # we create masked images
-    noise = torch.randn_like(x1s_img) * (1 - masks)
-    x0s_img = x1s_img * masks + noise
+    # we set models to eval mode and disable gradients
+    b.eval()  # we set b to eval mode
+    eta.eval()  # we set eta to eval mode
     
-    # we reconstruct using probability flow
-    x0s = x0s_img.reshape(vis_bs, -1)
-    x1s = x1s_img.reshape(vis_bs, -1)
+    # we get a batch for visualization (reduced batch size to save memory)
+    vis_bs = 4  # we reduce batch size from 8 to 4 to save memory
+    print(f"[verbose] using visualization batch size: {vis_bs}")  # we log batch size
     
-    # we use simple forward integration
-    with torch.no_grad():
-        s = stochastic_interpolant.SFromEta(eta, interpolant.a)
+    with torch.no_grad():  # we disable gradients for entire visualization
+        x1s_img = get_cifar_batch(vis_bs)  # we get batch
+        masks = create_patch_mask(vis_bs, patch_size=patch_size, num_patches=num_patches)  # we create masks
+        
+        # we create masked images
+        noise = torch.randn_like(x1s_img) * (1 - masks)  # we create noise
+        x0s_img = x1s_img * masks + noise  # we combine masked image and noise
+        
+        # we reconstruct using probability flow
+        x0s = x0s_img.reshape(vis_bs, -1)  # we flatten
+        x1s = x1s_img.reshape(vis_bs, -1)  # we flatten
+        
+        # we use rk4 instead of dopri5 to save memory (less accurate but faster and less memory)
+        # we use sample_only=True to disable divergence computation which requires gradient graph and uses lots of memory
+        print(f"[verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...")  # we log integration start
+        s = stochastic_interpolant.SFromEta(eta, interpolant.a)  # we create s from eta
         pflow = stochastic_interpolant.PFlowIntegrator(
-            b=b, method='dopri5', interpolant=interpolant, n_step=10
-        )
-        xfs_pflow, _ = pflow.rollout(x0s)
-        xf_pflow = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)
+            b=b, method='rk4', interpolant=interpolant, n_step=5, sample_only=True  # we use rk4 with fewer steps and disable divergence to save memory
+        )  # we create integrator
+        
+        # we try batch integration first, fall back to one-by-one if memory error
+        try:  # we try batch integration
+            xfs_pflow, _ = pflow.rollout(x0s)  # we integrate batch
+            xf_pflow = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)  # we reshape result
+            print(f"[verbose] integration complete (batch mode)")  # we log completion
+        except torch.cuda.OutOfMemoryError:  # we catch memory error
+            print(f"[verbose] batch integration failed, processing one image at a time...")  # we log fallback
+            xf_pflow_list = []  # we initialize result list
+            for i in range(vis_bs):  # we process each image separately
+                x0s_single = x0s[i:i+1]  # we get single image
+                xfs_single, _ = pflow.rollout(x0s_single)  # we integrate single image
+                xf_single = xfs_single[-1].reshape(1, 3, 32, 32)  # we reshape single result
+                xf_pflow_list.append(xf_single)  # we append to list
+                torch.cuda.empty_cache()  # we clear cache after each image
+            xf_pflow = torch.cat(xf_pflow_list, dim=0)  # we concatenate results
+            print(f"[verbose] integration complete (one-by-one mode)")  # we log completion
+    
+    # we clear cache again after integration
+    if torch.cuda.is_available():  # we check if cuda is available
+        torch.cuda.empty_cache()  # we clear cuda cache again
     
     # we plot results
     fig, axes = plt.subplots(3, vis_bs, figsize=(vis_bs*2, 6))
     
+    # we define denormalization function with clamping to avoid warnings
+    def denorm(img):
+        """we denormalize and clamp to [0,1] for visualization"""
+        denormed = img * 0.5 + 0.5  # we denormalize from [-1,1] to [0,1]
+        return torch.clamp(denormed, 0.0, 1.0)  # we clamp to valid range
+    
     for i in range(vis_bs):
-        # we denormalize images for visualization
-        def denorm(img):
-            return img * 0.5 + 0.5
-        
         # we show original image
-        axes[0, i].imshow(np.transpose(grab(denorm(x1s_img[i])), (1, 2, 0)))
-        axes[0, i].axis('off')
+        img_orig = np.transpose(grab(denorm(x1s_img[i])), (1, 2, 0))  # we denormalize and transpose
+        axes[0, i].imshow(img_orig)  # we display image
+        axes[0, i].axis('off')  # we remove axes
         if i == 0:
-            axes[0, i].set_title('original', fontsize=10)
+            axes[0, i].set_title('original', fontsize=10)  # we set title
         
         # we show masked image
-        axes[1, i].imshow(np.transpose(grab(denorm(x0s_img[i])), (1, 2, 0)))
-        axes[1, i].axis('off')
+        img_masked = np.transpose(grab(denorm(x0s_img[i])), (1, 2, 0))  # we denormalize and transpose
+        axes[1, i].imshow(img_masked)  # we display image
+        axes[1, i].axis('off')  # we remove axes
         if i == 0:
-            axes[1, i].set_title('masked', fontsize=10)
+            axes[1, i].set_title('masked', fontsize=10)  # we set title
         
         # we show reconstructed image
-        axes[2, i].imshow(np.transpose(grab(denorm(xf_pflow[i])), (1, 2, 0)))
-        axes[2, i].axis('off')
+        img_recon = np.transpose(grab(denorm(xf_pflow[i])), (1, 2, 0))  # we denormalize and transpose
+        axes[2, i].imshow(img_recon)  # we display image
+        axes[2, i].axis('off')  # we remove axes
         if i == 0:
-            axes[2, i].set_title('reconstructed', fontsize=10)
+            axes[2, i].set_title('reconstructed', fontsize=10)  # we set title
     
-    plt.suptitle(f'dog patch reconstruction - epoch {counter}', fontsize=14, y=1.02)
+    plt.suptitle(f'cifar patch reconstruction - epoch {counter}', fontsize=14, y=1.02)
     plt.tight_layout()
-    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for saving figures
-    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
-    recon_path = os.path.join(results_dir, f"dog_reconstruction_epoch_{counter}.png")  # we build reconstruction path
+    dataset_tag = f"{dataset_name}_patch{patch_size}x{patch_size}_np{num_patches}_{epsilon_tag}"
+    run_dir = os.path.join(results_root, dataset_tag, f"{path_name}_{gamma_name}")
+    os.makedirs(run_dir, exist_ok=True)
+    recon_path = os.path.join(run_dir, f"cifar_reconstruction_epoch_{counter}.png")
     plt.savefig(recon_path, dpi=150, bbox_inches="tight")
     plt.show()
     
@@ -388,7 +677,7 @@ def make_plots(
     axes[0].plot(epochs, data_dict["eta_losses"], label="eta loss", alpha=0.7)
     axes[0].set_xlabel("epoch")
     axes[0].set_ylabel("loss")
-    axes[0].set_title("training loss (dog class)")
+    axes[0].set_title("training loss (cifar)")
     axes[0].legend()
     axes[0].grid(True, alpha=0.3)
     
@@ -409,15 +698,31 @@ def make_plots(
     axes[2].legend()
     axes[2].grid(True, alpha=0.3)
     
-    path_name = interpolant.path  # we get interpolant path name
-    gamma_name = getattr(interpolant, "gamma_type", "none")  # we get gamma schedule name
+    # we build title with all parameters
+    total_params = (n_params_b or 0) + (n_params_eta or 0)  # we compute total parameters
+    img_size_str = f"{image_size[0]}x{image_size[1]}"  # we format image size
+    batch_str = f"bs={batch_size}" if batch_size is not None else ""  # we format batch size
+    lr_str = f"lr={base_lr:.0e}" if base_lr is not None else ""  # we format learning rate
+    params_str = f"params={total_params:,}" if total_params > 0 else ""  # we format parameters
     
+    patch_str = f"patch={patch_size}x{patch_size}"
+    dataset_str = dataset_name
+    epsilon_str = epsilon_tag
+    # we build full title
+    title_parts = [params_str, f"img={img_size_str}", patch_str, dataset_str, epsilon_str, batch_str, lr_str]  # we collect title parts
+    title_parts = [p for p in title_parts if p]  # we filter empty parts
+    full_title = " | ".join(title_parts)  # we join title parts
+    
+    plt.suptitle(full_title, fontsize=10, y=1.02)  # we set main title
     plt.tight_layout()
-    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for saving curves
-    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
-    curves_path = os.path.join(results_dir, f"dog_training_curves_{path_name}_{gamma_name}_epoch_{counter}.png")  # we build curves path
-    plt.savefig(curves_path, dpi=150, bbox_inches="tight")
-    plt.show()
+    curves_path = os.path.join(run_dir, f"cifar_training_curves_{path_name}_{gamma_name}_epoch_{counter}.png")
+    plt.savefig(curves_path, dpi=150, bbox_inches="tight")  # we save figure
+    plt.close(fig)  # we close figure to free memory (no show)
+    
+    # we set models back to train mode for next training iteration
+    b.train()  # we set b back to train mode
+    eta.train()  # we set eta back to train mode
+    print(f"[verbose] models set back to train mode")  # we log mode change
     
 # we define main training setup
 if __name__ == "__main__":
@@ -425,7 +730,7 @@ if __name__ == "__main__":
     base_lr = 1e-4  # we set base learning rate
     batch_size = 32  # we set batch size
     n_epochs = 5000  # we set number of epochs
-    patch_size = 8  # we set patch size
+    patch_size = 6  # we set patch size
     num_patches = 4  # we set number of patches
     metrics_freq = 100  # we set metrics logging frequency
     plot_freq = 500  # we set plotting frequency
@@ -516,13 +821,20 @@ if __name__ == "__main__":
                 
                 # we make plots and save checkpoints
                 if (counter - 1) % plot_freq == 0:
-                    make_plots(b, eta, interpolant, counter, data_dict, patch_size, num_patches)  # we visualize results
+                    make_plots(
+                        b, eta, interpolant, counter, data_dict, patch_size, num_patches,
+                        n_params_b=n_params_b, n_params_eta=n_params_eta,
+                        image_size=(32, 32), batch_size=batch_size, base_lr=base_lr,
+                        metrics_freq=metrics_freq, dataset_name=DATASET_NAME,
+                        epsilon_tag=EPSILON_TAG
+                    )  # we visualize results with all parameters
                     
-                    results_dir = os.path.join("vresults", "cifarpatchedinterpolants")  # we define directory for checkpoints
-                    os.makedirs(results_dir, exist_ok=True)  # we ensure results directory exists
+                    dataset_tag = f"{DATASET_NAME}_patch{patch_size}x{patch_size}_np{num_patches}_{EPSILON_TAG}"
+                    ckpt_dir = os.path.join(RESULTS_ROOT, dataset_tag, "checkpoints")  # we define directory for checkpoints
+                    os.makedirs(ckpt_dir, exist_ok=True)  # we ensure checkpoint directory exists
                     ckpt_name = os.path.join(
-                        results_dir,
-                        f"dog_checkpoint_{path}_{gamma_type}_epoch_{counter}.pt",
+                        ckpt_dir,
+                        f"cifar_checkpoint_{path}_{gamma_type}_epoch_{counter}.pt",
                     )  # we build checkpoint filename
                     torch.save(
                         {
