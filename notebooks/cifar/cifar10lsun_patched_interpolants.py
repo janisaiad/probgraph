@@ -15,9 +15,12 @@ from typing import Tuple, Any
 import interflow as itf
 import interflow.stochastic_interpolant as stochastic_interpolant
 
-RESULTS_ROOT = os.path.join("vresults", "cifarpatchedinterpolants")
-DATASET_NAME = "cifar10_dog"
-EPSILON_TAG = "eps-none"
+RESULTS_ROOT = os.path.join("vresults", "cifarpatchedinterpolants")  # we store root for saved results
+DATASET_NAME = "cifar10_dog"  # we tag runs by dataset
+EPSILON_TAG = "eps-none"  # we mark epsilon inference variant (none by default)
+NUM_CHANNELS = 3  # we set the number of image channels
+IMAGE_SIZE = (64, 64)  # we set the target spatial resolution for inputs
+IMAGE_HEIGHT, IMAGE_WIDTH = IMAGE_SIZE  # we unpack height and width
 
 if torch.cuda.is_available():
     print('cuda available, setting default tensor residence to gpu')
@@ -219,7 +222,7 @@ def ensure_lsun_bedroom(lsun_root: str, max_retries: int = 3, timeout: int = 300
 # we load celebA dataset
 print(f"[verbose] === starting dataset loading process ===")  # we log start
 transform = transforms.Compose([
-    transforms.Resize((32, 32)),  # we resize celebA images to 32x32
+    transforms.Resize(IMAGE_SIZE),  # we resize celebA images to target shape
     transforms.ToTensor(),  # we convert images to tensors
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize channels
 ])
@@ -231,7 +234,7 @@ print(f"[verbose] max_samples: {max_samples}")  # we log max samples
 celebA_root = "../../data/celeba"  # we set celebA root directory
 print(f"[verbose] loading celebA dataset...")  # we log celebA load
 print(f"[verbose] celebA root: {os.path.abspath(celebA_root)}")  # we log celebA root
-print(f"[verbose] using transform: Resize(32x32) -> ToTensor -> Normalize")  # we log transform
+print(f"[verbose] using transform: Resize({IMAGE_HEIGHT}x{IMAGE_WIDTH}) -> ToTensor -> Normalize")  # we log transform
 
 # we check if gdown is needed and try to install it
 try:  # we try to import gdown
@@ -317,11 +320,11 @@ def get_cifar_batch(bs):
 # we create masking function for patches
 def create_patch_mask(bs, patch_size=6, num_patches=4):
     """we create random patch masks, 1 for visible pixels, 0 for masked patches"""
-    mask = torch.ones(bs, 3, 32, 32)
+    mask = torch.ones(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we initialize mask for rgb images
     for i in range(bs):
         for _ in range(num_patches):
-            x = torch.randint(0, 32 - patch_size, (1,)).item()
-            y = torch.randint(0, 32 - patch_size, (1,)).item()
+            x = torch.randint(0, max(1, IMAGE_HEIGHT - patch_size + 1), (1,)).item()  # we sample patch row
+            y = torch.randint(0, max(1, IMAGE_WIDTH - patch_size + 1), (1,)).item()  # we sample patch column
             mask[i, :, x:x+patch_size, y:y+patch_size] = 0  # we mask the patch
     return mask.to(itf.util.get_torch_device())
 
@@ -463,9 +466,9 @@ class EtaNetwork(nn.Module):
         self.unet = unet  # we store underlying unet
     
     def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
+        """we expect x of shape [bs, num_channels*image_height*image_width] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
-        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
+        x_img = x.reshape(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape flat image to 4d tensor
         out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
@@ -477,9 +480,9 @@ class VelocityNetwork(nn.Module):
         self.unet = unet  # we store underlying unet
     
     def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
+        """we expect x of shape [bs, num_channels*image_height*image_width] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
-        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
+        x_img = x.reshape(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape flat image to 4d tensor
         out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
@@ -500,10 +503,10 @@ def train_step(
     opt_eta.zero_grad()
     
     # we construct batch of real images
-    x1s_img = get_cifar_batch(bs)  # we get [bs, 3, 32, 32]
+    x1s_img = get_cifar_batch(bs)  # we get [bs, num_channels, image_height, image_width]
     
     # we create masks
-    masks = create_patch_mask(bs, patch_size=patch_size, num_patches=num_patches)  # we get [bs, 3, 32, 32]
+    masks = create_patch_mask(bs, patch_size=patch_size, num_patches=num_patches)  # we get [bs, num_channels, image_height, image_width]
     
     # we create masked images + noise in masked regions as starting point
     noise = torch.randn_like(x1s_img) * (1 - masks)  # we add noise only in masked regions
@@ -555,7 +558,7 @@ def make_plots(
     num_patches: int,
     n_params_b: int = None,
     n_params_eta: int = None,
-    image_size: tuple = (32, 32),
+    image_size: tuple = IMAGE_SIZE,
     batch_size: int = None,
     base_lr: float = None,
     metrics_freq: int = 100,
@@ -608,7 +611,7 @@ def make_plots(
         # we try batch integration first, fall back to one-by-one if memory error
         try:  # we try batch integration
             xfs_pflow, _ = pflow.rollout(x0s)  # we integrate batch
-            xf_pflow = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)  # we reshape result
+            xf_pflow = xfs_pflow[-1].reshape(vis_bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape result
             print(f"[verbose] integration complete (batch mode)")  # we log completion
         except torch.cuda.OutOfMemoryError:  # we catch memory error
             print(f"[verbose] batch integration failed, processing one image at a time...")  # we log fallback
@@ -616,7 +619,7 @@ def make_plots(
             for i in range(vis_bs):  # we process each image separately
                 x0s_single = x0s[i:i+1]  # we get single image
                 xfs_single, _ = pflow.rollout(x0s_single)  # we integrate single image
-                xf_single = xfs_single[-1].reshape(1, 3, 32, 32)  # we reshape single result
+                xf_single = xfs_single[-1].reshape(1, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape single result
                 xf_pflow_list.append(xf_single)  # we append to list
                 torch.cuda.empty_cache()  # we clear cache after each image
             xf_pflow = torch.cat(xf_pflow_list, dim=0)  # we concatenate results
@@ -824,7 +827,7 @@ if __name__ == "__main__":
                     make_plots(
                         b, eta, interpolant, counter, data_dict, patch_size, num_patches,
                         n_params_b=n_params_b, n_params_eta=n_params_eta,
-                        image_size=(32, 32), batch_size=batch_size, base_lr=base_lr,
+                        image_size=IMAGE_SIZE, batch_size=batch_size, base_lr=base_lr,
                         metrics_freq=metrics_freq, dataset_name=DATASET_NAME,
                         epsilon_tag=EPSILON_TAG
                     )  # we visualize results with all parameters
