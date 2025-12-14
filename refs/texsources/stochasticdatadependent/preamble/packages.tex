@@ -1,0 +1,112 @@
+
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{adjustbox}
+\usepackage[raggedright]{sidecap}
+
+%%%%% For line breaks in tables
+% \usepackage{fourier} 
+\usepackage{array}
+\usepackage{makecell}
+\usepackage{thmtools}
+
+ % % ####### PACKAGES ONLY
+\usepackage{amssymb, amsmath, amsthm}
+
+\definecolor{shadecolor}{gray}{0.9}
+
+
+% FONTS
+%\usepackage{amsmath}
+\usepackage{enumitem}
+%\usepackage{amssymb}
+\newcommand{\mathbold}[1]{\ensuremath{\boldsymbol{\mathbf{#1}}}}
+\DeclareRobustCommand{\mb}[1]{\mathbold{#1}}
+\usepackage{amsthm}
+% define a paragraph header function
+\DeclareRobustCommand{\parhead}[1]{\textbf{#1}~}
+
+% FIGURES
+\sidecaptionvpos{figure}{t} 
+\usepackage{graphicx}
+\usepackage[labelfont=bf]{caption}
+\usepackage[format=hang]{subcaption}
+
+% MICROTYPOGRAPHY
+\usepackage{microtype}
+
+% TABLES
+\usepackage{booktabs}
+
+% ALGORITHMS
+\usepackage[algoruled, algo2e]{algorithm2e}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+% \usepackage[algoruled]{algorithm2e}
+\usepackage{listings}
+\usepackage{fancyvrb}
+% \fvset{fontsize=\normalsize}
+% BIBLIOGRAPHY
+\usepackage{natbib}
+
+\usepackage{xcolor}
+\hypersetup{
+    colorlinks,
+    linkcolor={red!50!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+% CLEVEREF must come after HYPERREF
+\usepackage[nameinlink, capitalise]{cleveref}
+% ACRONYMS
+\usepackage[acronym,nowarn]{glossaries}
+\glsdisablehyper
+% \makeglossaries
+
+% EQUATTIONS
+\usepackage{nccmath}
+
+\usepackage[theorems,skins]{tcolorbox}
+%\newtheorem{thm}{Theorem}
+%\newtheorem{lemma}{Lemma}
+%\newtheorem{prop}{Proposition}
+
+% \newtheorem{theorem}{Theorem}
+% \newtheorem{corollary}[theorem]{Corollary}
+% \newtheorem{proposition}[theorem]{Proposition}
+% \newtheorem{assumption}{Assumption}
+% \newtheorem{definition}{Definition}
+% \newtheorem{lemma}[theorem]{Lemma}
+% \newtheorem{claim}[theorem]{Claim}
+% \newtheorem{remark}[theorem]{Remark}
+% \newtheorem{example}{Example}
+% \newtheorem{ansatz}{Ansatz}
+
+
+
+
+
+\usepackage{wrapfig}
+
+\usepackage{nicefrac}
+
+\usepackage{multirow}
+\usepackage{soul}
+\usepackage{color}
+
+
+
+% COLOR DEFINITIONS
+\newcommand{\red}[1]{\textcolor{BrickRed}{#1}}
+\newcommand{\orange}[1]{\textcolor{BurntOrange}{#1}}
+\newcommand{\green}[1]{\textcolor{OliveGreen}{#1}}
+\newcommand{\blue}[1]{\textcolor{MidnightBlue}{#1}}
+\newcommand{\gray}[1]{\textcolor{black!60}{#1}}
+
+\definecolor{amaranth}{rgb}{0.9, 0.17, 0.31}
+\newcommand{\revise}[1]{{\color{amaranth}#1}}
+
+\definecolor{airforceblue}{rgb}{0.36, 0.54, 0.66}
+\newcommand{\reviseb}[1]  {{\color{airforceblue}   {#1}}}
