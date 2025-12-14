@@ -1,0 +1,34 @@
+2025-12-14 11:43:58,907 run log started for path=linear, gamma_type=sigmoid, epsilon=eps-0.5
+2025-12-14 11:43:58,907 log file: logs/cifar10_dog_patch6x6_np4_eps-0.5/20251214_114358_linear_sigmoid_eps-0.5.log
+2025-12-14 11:43:58,907 
+creating u-net architectures...
+2025-12-14 11:43:58,911 b network parameters: 9,402,371
+2025-12-14 11:43:58,911 eta network parameters: 9,402,371
+2025-12-14 11:43:58,912 
+starting training...
+
+2025-12-14 11:43:59,089 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 1: loss=4149.3164, b_loss=2735.2368, eta_loss=1414.0796
+2025-12-14 11:43:59,089 
+epoch: 1
+2025-12-14 11:43:59,153 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.72 GB, total: 19.53 GB
+2025-12-14 11:43:59,153 [verbose] using visualization batch size: 4
+2025-12-14 11:43:59,155 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 11:43:59,190 [verbose] integration complete (batch mode)
+2025-12-14 11:43:59,469 [verbose] models set back to train mode
+2025-12-14 11:43:59,584 saved checkpoint at epoch 1 for path=linear, gamma_type=sigmoid, epsilon=eps-0.5
+2025-12-14 11:44:16,810 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 101: loss=-3294.8835, b_loss=-288.0012, eta_loss=-3006.8823
+2025-12-14 11:44:34,040 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 201: loss=-3988.8267, b_loss=-107.5112, eta_loss=-3881.3154
+2025-12-14 11:44:51,264 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 301: loss=-4039.3843, b_loss=-204.7453, eta_loss=-3834.6389
+2025-12-14 11:45:08,493 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 401: loss=-12477.2598, b_loss=-8099.1704, eta_loss=-4378.0889
+2025-12-14 11:45:25,713 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 501: loss=-14490.3662, b_loss=-10295.8770, eta_loss=-4194.4893
+2025-12-14 11:45:25,713 
+epoch: 501
+2025-12-14 11:45:25,775 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 11:45:25,776 [verbose] using visualization batch size: 4
+2025-12-14 11:45:25,778 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 11:45:25,812 [verbose] integration complete (batch mode)
+2025-12-14 11:45:26,106 [verbose] models set back to train mode
+2025-12-14 11:45:26,218 saved checkpoint at epoch 501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.5
+2025-12-14 11:45:43,477 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 601: loss=-11906.7344, b_loss=-8326.2480, eta_loss=-3580.4863
+2025-12-14 11:46:00,734 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 701: loss=-16677.6758, b_loss=-12155.8398, eta_loss=-4521.8359
+2025-12-14 11:46:18,000 [path=linear | gamma_type=sigmoid | eps=eps-0.5] epoch 801: loss=-16709.3516, b_loss=-12367.1123, eta_loss=-4342.2397
