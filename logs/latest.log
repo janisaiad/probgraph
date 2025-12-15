@@ -1314,3 +1314,675 @@ epoch: 4501
 2025-12-14 13:23:44,741 saved checkpoint at epoch 4501 for path=encoding-decoding, gamma_type=sigmoid, epsilon=eps-0.5
 2025-12-14 13:24:02,021 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4601: loss=-27984.2109, b_loss=-23317.1406, eta_loss=-4667.0713
 2025-12-14 13:24:19,304 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4701: loss=-30956.0605, b_loss=-26596.2773, eta_loss=-4359.7832
+2025-12-14 13:24:36,605 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4801: loss=-32307.6328, b_loss=-27572.2812, eta_loss=-4735.3525
+2025-12-14 13:24:53,931 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4901: loss=-32982.8750, b_loss=-28253.3164, eta_loss=-4729.5601
+2025-12-14 13:25:11,046 
+training complete for path=encoding-decoding, gamma_type=sigmoid
+
+2025-12-14 13:25:11,046 
+using epsilon: 0.25 (eps-0.25)
+2025-12-14 13:25:11,046 
+using interpolant: path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:25:11,046 run log started for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:25:11,046 log file: logs/cifar10_dog_patch6x6_np4_eps-0.25/20251214_132511_linear_bsquared_eps-0.25.log
+2025-12-14 13:25:11,046 
+creating u-net architectures...
+2025-12-14 13:25:11,050 b network parameters: 9,402,371
+2025-12-14 13:25:11,050 eta network parameters: 9,402,371
+2025-12-14 13:25:11,050 
+starting training...
+
+2025-12-14 13:25:11,226 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1: loss=3086.7156, b_loss=2250.7129, eta_loss=836.0027
+2025-12-14 13:25:11,226 
+epoch: 1
+2025-12-14 13:25:11,289 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.76 GB, total: 19.53 GB
+2025-12-14 13:25:11,290 [verbose] using visualization batch size: 4
+2025-12-14 13:25:11,292 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:25:11,326 [verbose] integration complete (batch mode)
+2025-12-14 13:25:11,601 [verbose] models set back to train mode
+2025-12-14 13:25:11,706 saved checkpoint at epoch 1 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:25:28,925 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 101: loss=-4143.7534, b_loss=-6.2954, eta_loss=-4137.4580
+2025-12-14 13:25:46,135 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 201: loss=-4517.1260, b_loss=-186.5613, eta_loss=-4330.5645
+2025-12-14 13:26:03,354 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 301: loss=-5013.3296, b_loss=-609.5063, eta_loss=-4403.8232
+2025-12-14 13:26:20,561 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 401: loss=-6316.9985, b_loss=-2135.4585, eta_loss=-4181.5400
+2025-12-14 13:26:37,778 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 501: loss=-7246.6641, b_loss=-2329.2312, eta_loss=-4917.4326
+2025-12-14 13:26:37,778 
+epoch: 501
+2025-12-14 13:26:37,840 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.81 GB, total: 19.53 GB
+2025-12-14 13:26:37,840 [verbose] using visualization batch size: 4
+2025-12-14 13:26:37,842 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:26:37,876 [verbose] integration complete (batch mode)
+2025-12-14 13:26:38,156 [verbose] models set back to train mode
+2025-12-14 13:26:38,262 saved checkpoint at epoch 501 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:26:55,487 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 601: loss=-6997.8931, b_loss=-1948.2515, eta_loss=-5049.6416
+2025-12-14 13:27:12,706 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 701: loss=-8028.3325, b_loss=-3177.8760, eta_loss=-4850.4565
+2025-12-14 13:27:29,922 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 801: loss=-7392.4004, b_loss=-2798.6533, eta_loss=-4593.7471
+2025-12-14 13:27:47,142 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 901: loss=-7701.6934, b_loss=-2910.9763, eta_loss=-4790.7168
+2025-12-14 13:28:04,362 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1001: loss=-8183.1079, b_loss=-3222.8174, eta_loss=-4960.2905
+2025-12-14 13:28:04,362 
+epoch: 1001
+2025-12-14 13:28:04,425 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:28:04,425 [verbose] using visualization batch size: 4
+2025-12-14 13:28:04,427 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:28:04,461 [verbose] integration complete (batch mode)
+2025-12-14 13:28:04,742 [verbose] models set back to train mode
+2025-12-14 13:28:04,847 saved checkpoint at epoch 1001 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:28:22,068 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1101: loss=-7997.3354, b_loss=-2945.3237, eta_loss=-5052.0117
+2025-12-14 13:28:39,278 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1201: loss=-8406.4482, b_loss=-3582.4639, eta_loss=-4823.9844
+2025-12-14 13:28:56,494 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1301: loss=-7978.1118, b_loss=-2840.7529, eta_loss=-5137.3589
+2025-12-14 13:29:13,713 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1401: loss=-8028.9541, b_loss=-3068.2559, eta_loss=-4960.6982
+2025-12-14 13:29:30,929 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1501: loss=-8078.6621, b_loss=-2949.9690, eta_loss=-5128.6934
+2025-12-14 13:29:30,929 
+epoch: 1501
+2025-12-14 13:29:30,991 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:29:30,992 [verbose] using visualization batch size: 4
+2025-12-14 13:29:30,994 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:29:31,028 [verbose] integration complete (batch mode)
+2025-12-14 13:29:31,324 [verbose] models set back to train mode
+2025-12-14 13:29:31,441 saved checkpoint at epoch 1501 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:29:48,662 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1601: loss=-8486.2197, b_loss=-3599.4541, eta_loss=-4886.7656
+2025-12-14 13:30:05,881 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1701: loss=-8172.0430, b_loss=-3166.1743, eta_loss=-5005.8687
+2025-12-14 13:30:23,094 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1801: loss=-8127.7510, b_loss=-3027.1133, eta_loss=-5100.6377
+2025-12-14 13:30:40,310 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 1901: loss=-8364.4375, b_loss=-3380.8762, eta_loss=-4983.5610
+2025-12-14 13:30:57,525 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2001: loss=-8251.9453, b_loss=-3370.0728, eta_loss=-4881.8721
+2025-12-14 13:30:57,525 
+epoch: 2001
+2025-12-14 13:30:57,587 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:30:57,588 [verbose] using visualization batch size: 4
+2025-12-14 13:30:57,590 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:30:57,624 [verbose] integration complete (batch mode)
+2025-12-14 13:30:57,925 [verbose] models set back to train mode
+2025-12-14 13:30:58,031 saved checkpoint at epoch 2001 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:31:15,278 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2101: loss=-7893.7900, b_loss=-3154.4382, eta_loss=-4739.3516
+2025-12-14 13:31:32,519 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2201: loss=-8720.7070, b_loss=-3744.8147, eta_loss=-4975.8926
+2025-12-14 13:31:49,762 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2301: loss=-8352.9473, b_loss=-3334.5720, eta_loss=-5018.3750
+2025-12-14 13:32:07,001 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2401: loss=-8326.4023, b_loss=-3050.8940, eta_loss=-5275.5078
+2025-12-14 13:32:24,243 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2501: loss=-8405.0088, b_loss=-3179.9031, eta_loss=-5225.1055
+2025-12-14 13:32:24,243 
+epoch: 2501
+2025-12-14 13:32:24,306 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:32:24,306 [verbose] using visualization batch size: 4
+2025-12-14 13:32:24,308 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:32:24,343 [verbose] integration complete (batch mode)
+2025-12-14 13:32:24,625 [verbose] models set back to train mode
+2025-12-14 13:32:24,730 saved checkpoint at epoch 2501 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:32:41,962 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2601: loss=-8185.3027, b_loss=-2989.1436, eta_loss=-5196.1592
+2025-12-14 13:32:59,184 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2701: loss=-8534.3047, b_loss=-3312.4194, eta_loss=-5221.8857
+2025-12-14 13:33:16,413 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2801: loss=-8200.2363, b_loss=-3431.0579, eta_loss=-4769.1787
+2025-12-14 13:33:33,632 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 2901: loss=-7742.6865, b_loss=-2710.4331, eta_loss=-5032.2534
+2025-12-14 13:33:50,859 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3001: loss=-7806.6758, b_loss=-2686.6375, eta_loss=-5120.0381
+2025-12-14 13:33:50,859 
+epoch: 3001
+2025-12-14 13:33:50,922 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:33:50,922 [verbose] using visualization batch size: 4
+2025-12-14 13:33:50,924 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:33:50,959 [verbose] integration complete (batch mode)
+2025-12-14 13:33:51,248 [verbose] models set back to train mode
+2025-12-14 13:33:51,363 saved checkpoint at epoch 3001 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:34:08,612 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3101: loss=-8275.9570, b_loss=-3195.7747, eta_loss=-5080.1821
+2025-12-14 13:34:25,850 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3201: loss=-7862.0024, b_loss=-2643.1597, eta_loss=-5218.8428
+2025-12-14 13:34:43,087 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3301: loss=-7852.2632, b_loss=-2762.5146, eta_loss=-5089.7485
+2025-12-14 13:35:00,328 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3401: loss=-8291.3613, b_loss=-3278.6250, eta_loss=-5012.7363
+2025-12-14 13:35:17,570 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3501: loss=-8501.3584, b_loss=-3296.5259, eta_loss=-5204.8325
+2025-12-14 13:35:17,570 
+epoch: 3501
+2025-12-14 13:35:17,633 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.79 GB, total: 19.53 GB
+2025-12-14 13:35:17,634 [verbose] using visualization batch size: 4
+2025-12-14 13:35:17,636 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:35:17,670 [verbose] integration complete (batch mode)
+2025-12-14 13:35:18,635 [verbose] models set back to train mode
+2025-12-14 13:35:18,752 saved checkpoint at epoch 3501 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:35:35,987 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3601: loss=-8190.3921, b_loss=-3127.5405, eta_loss=-5062.8516
+2025-12-14 13:35:53,219 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3701: loss=-8251.0449, b_loss=-3114.8447, eta_loss=-5136.2007
+2025-12-14 13:36:10,462 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3801: loss=-8391.7676, b_loss=-3112.3860, eta_loss=-5279.3818
+2025-12-14 13:36:27,696 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 3901: loss=-8289.6240, b_loss=-3337.7107, eta_loss=-4951.9131
+2025-12-14 13:36:44,935 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4001: loss=-8974.2715, b_loss=-3789.8223, eta_loss=-5184.4487
+2025-12-14 13:36:44,935 
+epoch: 4001
+2025-12-14 13:36:44,999 [verbose] cleared cuda cache, allocated: 0.38 GB, reserved: 0.68 GB, total: 19.53 GB
+2025-12-14 13:36:44,999 [verbose] using visualization batch size: 4
+2025-12-14 13:36:45,001 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:36:45,036 [verbose] integration complete (batch mode)
+2025-12-14 13:36:45,329 [verbose] models set back to train mode
+2025-12-14 13:36:45,434 saved checkpoint at epoch 4001 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:37:02,687 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4101: loss=-8837.6367, b_loss=-3572.0972, eta_loss=-5265.5396
+2025-12-14 13:37:19,949 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4201: loss=-8628.2578, b_loss=-3459.8413, eta_loss=-5168.4160
+2025-12-14 13:37:37,209 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4301: loss=-8136.1504, b_loss=-2881.0591, eta_loss=-5255.0913
+2025-12-14 13:37:54,468 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4401: loss=-8613.6807, b_loss=-3955.3557, eta_loss=-4658.3247
+2025-12-14 13:38:11,732 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4501: loss=-7879.2012, b_loss=-2535.5020, eta_loss=-5343.6992
+2025-12-14 13:38:11,732 
+epoch: 4501
+2025-12-14 13:38:11,792 [verbose] cleared cuda cache, allocated: 0.38 GB, reserved: 0.71 GB, total: 19.53 GB
+2025-12-14 13:38:11,792 [verbose] using visualization batch size: 4
+2025-12-14 13:38:11,796 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:38:11,830 [verbose] integration complete (batch mode)
+2025-12-14 13:38:12,106 [verbose] models set back to train mode
+2025-12-14 13:38:12,211 saved checkpoint at epoch 4501 for path=linear, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 13:38:29,471 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4601: loss=-8982.6660, b_loss=-3834.0603, eta_loss=-5148.6055
+2025-12-14 13:38:46,717 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4701: loss=-8324.3047, b_loss=-3521.5271, eta_loss=-4802.7773
+2025-12-14 13:39:03,969 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4801: loss=-8478.4395, b_loss=-3352.0532, eta_loss=-5126.3857
+2025-12-14 13:39:21,237 [path=linear | gamma_type=bsquared | eps=eps-0.25] epoch 4901: loss=-8508.2275, b_loss=-3479.1650, eta_loss=-5029.0625
+2025-12-14 13:39:38,332 
+training complete for path=linear, gamma_type=bsquared
+
+2025-12-14 13:39:38,332 
+using interpolant: path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:39:38,332 run log started for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:39:38,332 log file: logs/cifar10_dog_patch6x6_np4_eps-0.25/20251214_133938_linear_sinesquared_eps-0.25.log
+2025-12-14 13:39:38,332 
+creating u-net architectures...
+2025-12-14 13:39:38,336 b network parameters: 9,402,371
+2025-12-14 13:39:38,336 eta network parameters: 9,402,371
+2025-12-14 13:39:38,337 
+starting training...
+
+2025-12-14 13:39:38,513 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1: loss=2689.8362, b_loss=1155.4705, eta_loss=1534.3657
+2025-12-14 13:39:38,513 
+epoch: 1
+2025-12-14 13:39:38,575 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.78 GB, total: 19.53 GB
+2025-12-14 13:39:38,575 [verbose] using visualization batch size: 4
+2025-12-14 13:39:38,578 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:39:38,612 [verbose] integration complete (batch mode)
+2025-12-14 13:39:38,888 [verbose] models set back to train mode
+2025-12-14 13:39:38,993 saved checkpoint at epoch 1 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:39:56,263 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 101: loss=-6684.9971, b_loss=-2064.6135, eta_loss=-4620.3838
+2025-12-14 13:40:13,535 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 201: loss=-27223.0859, b_loss=-22785.5879, eta_loss=-4437.4971
+2025-12-14 13:40:30,804 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 301: loss=-42292.7148, b_loss=-37871.4805, eta_loss=-4421.2344
+2025-12-14 13:40:48,071 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 401: loss=-54602.3281, b_loss=-49873.3203, eta_loss=-4729.0068
+2025-12-14 13:41:05,338 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 501: loss=-39766.4531, b_loss=-35616.4062, eta_loss=-4150.0454
+2025-12-14 13:41:05,338 
+epoch: 501
+2025-12-14 13:41:05,401 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.80 GB, total: 19.53 GB
+2025-12-14 13:41:05,401 [verbose] using visualization batch size: 4
+2025-12-14 13:41:05,403 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:41:05,437 [verbose] integration complete (batch mode)
+2025-12-14 13:41:05,729 [verbose] models set back to train mode
+2025-12-14 13:41:05,834 saved checkpoint at epoch 501 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:41:23,086 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 601: loss=-67637.7422, b_loss=-62395.4570, eta_loss=-5242.2827
+2025-12-14 13:41:40,319 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 701: loss=-58493.8359, b_loss=-53956.9844, eta_loss=-4536.8530
+2025-12-14 13:41:57,558 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 801: loss=-56470.1523, b_loss=-51512.6367, eta_loss=-4957.5156
+2025-12-14 13:42:14,795 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 901: loss=-62189.2109, b_loss=-57100.0703, eta_loss=-5089.1401
+2025-12-14 13:42:32,029 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1001: loss=-56115.8125, b_loss=-51350.7305, eta_loss=-4765.0806
+2025-12-14 13:42:32,029 
+epoch: 1001
+2025-12-14 13:42:32,089 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.86 GB, total: 19.53 GB
+2025-12-14 13:42:32,090 [verbose] using visualization batch size: 4
+2025-12-14 13:42:32,092 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:42:32,126 [verbose] integration complete (batch mode)
+2025-12-14 13:42:32,413 [verbose] models set back to train mode
+2025-12-14 13:42:32,518 saved checkpoint at epoch 1001 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:42:49,731 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1101: loss=-58523.8242, b_loss=-53333.0977, eta_loss=-5190.7271
+2025-12-14 13:43:06,948 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1201: loss=-53272.5000, b_loss=-48047.2422, eta_loss=-5225.2559
+2025-12-14 13:43:24,164 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1301: loss=-61659.6914, b_loss=-56359.1641, eta_loss=-5300.5283
+2025-12-14 13:43:41,382 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1401: loss=-57852.1914, b_loss=-53190.3047, eta_loss=-4661.8862
+2025-12-14 13:43:58,608 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1501: loss=-66094.5469, b_loss=-61275.2070, eta_loss=-4819.3438
+2025-12-14 13:43:58,608 
+epoch: 1501
+2025-12-14 13:43:58,670 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.84 GB, total: 19.53 GB
+2025-12-14 13:43:58,670 [verbose] using visualization batch size: 4
+2025-12-14 13:43:58,672 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:43:58,707 [verbose] integration complete (batch mode)
+2025-12-14 13:43:59,018 [verbose] models set back to train mode
+2025-12-14 13:43:59,135 saved checkpoint at epoch 1501 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:44:16,359 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1601: loss=-59169.6602, b_loss=-54384.5547, eta_loss=-4785.1045
+2025-12-14 13:44:33,566 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1701: loss=-62279.4062, b_loss=-57324.8945, eta_loss=-4954.5103
+2025-12-14 13:44:50,776 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1801: loss=-55026.7539, b_loss=-50077.4531, eta_loss=-4949.2993
+2025-12-14 13:45:07,984 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 1901: loss=-54404.8828, b_loss=-49420.7891, eta_loss=-4984.0918
+2025-12-14 13:45:25,196 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2001: loss=-67118.1328, b_loss=-62069.2188, eta_loss=-5048.9160
+2025-12-14 13:45:25,196 
+epoch: 2001
+2025-12-14 13:45:25,257 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.83 GB, total: 19.53 GB
+2025-12-14 13:45:25,258 [verbose] using visualization batch size: 4
+2025-12-14 13:45:25,260 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:45:25,295 [verbose] integration complete (batch mode)
+2025-12-14 13:45:25,609 [verbose] models set back to train mode
+2025-12-14 13:45:25,714 saved checkpoint at epoch 2001 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:45:42,960 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2101: loss=-56828.1914, b_loss=-51853.3203, eta_loss=-4974.8696
+2025-12-14 13:46:00,198 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2201: loss=-70644.1484, b_loss=-65747.4688, eta_loss=-4896.6821
+2025-12-14 13:46:17,446 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2301: loss=-55400.8398, b_loss=-50620.6914, eta_loss=-4780.1489
+2025-12-14 13:46:34,680 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2401: loss=-61831.6875, b_loss=-57076.8516, eta_loss=-4754.8359
+2025-12-14 13:46:51,918 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2501: loss=-51450.8398, b_loss=-46258.9922, eta_loss=-5191.8472
+2025-12-14 13:46:51,918 
+epoch: 2501
+2025-12-14 13:46:51,982 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.86 GB, total: 19.53 GB
+2025-12-14 13:46:51,982 [verbose] using visualization batch size: 4
+2025-12-14 13:46:51,984 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:46:52,018 [verbose] integration complete (batch mode)
+2025-12-14 13:46:52,316 [verbose] models set back to train mode
+2025-12-14 13:46:52,421 saved checkpoint at epoch 2501 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:47:09,658 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2601: loss=-54178.6406, b_loss=-49347.3047, eta_loss=-4831.3340
+2025-12-14 13:47:26,892 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2701: loss=-70128.2891, b_loss=-64645.3867, eta_loss=-5482.9033
+2025-12-14 13:47:44,122 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2801: loss=-73129.2422, b_loss=-67917.2656, eta_loss=-5211.9775
+2025-12-14 13:48:01,362 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 2901: loss=-52125.3086, b_loss=-47019.2266, eta_loss=-5106.0811
+2025-12-14 13:48:18,606 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3001: loss=-53967.9375, b_loss=-48832.6836, eta_loss=-5135.2559
+2025-12-14 13:48:18,606 
+epoch: 3001
+2025-12-14 13:48:18,667 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.85 GB, total: 19.53 GB
+2025-12-14 13:48:18,667 [verbose] using visualization batch size: 4
+2025-12-14 13:48:18,670 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:48:18,704 [verbose] integration complete (batch mode)
+2025-12-14 13:48:19,009 [verbose] models set back to train mode
+2025-12-14 13:48:19,114 saved checkpoint at epoch 3001 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:48:36,353 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3101: loss=-64492.3281, b_loss=-58945.3203, eta_loss=-5547.0093
+2025-12-14 13:48:53,589 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3201: loss=-46545.3008, b_loss=-41626.2266, eta_loss=-4919.0757
+2025-12-14 13:49:10,829 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3301: loss=-51232.3359, b_loss=-46657.5547, eta_loss=-4574.7832
+2025-12-14 13:49:28,068 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3401: loss=-71412.7266, b_loss=-66284.3828, eta_loss=-5128.3408
+2025-12-14 13:49:45,305 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3501: loss=-64798.6016, b_loss=-59548.8359, eta_loss=-5249.7656
+2025-12-14 13:49:45,305 
+epoch: 3501
+2025-12-14 13:49:45,366 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.87 GB, total: 19.53 GB
+2025-12-14 13:49:45,367 [verbose] using visualization batch size: 4
+2025-12-14 13:49:45,369 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:49:45,403 [verbose] integration complete (batch mode)
+2025-12-14 13:49:45,717 [verbose] models set back to train mode
+2025-12-14 13:49:45,823 saved checkpoint at epoch 3501 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:50:03,062 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3601: loss=-64949.8086, b_loss=-60079.0820, eta_loss=-4870.7271
+2025-12-14 13:50:20,284 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3701: loss=-70934.5703, b_loss=-65392.8828, eta_loss=-5541.6855
+2025-12-14 13:50:37,505 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3801: loss=-59165.7969, b_loss=-53889.5000, eta_loss=-5276.2974
+2025-12-14 13:50:54,729 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 3901: loss=-57593.4883, b_loss=-52973.1875, eta_loss=-4620.2998
+2025-12-14 13:51:11,959 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4001: loss=-73417.5156, b_loss=-68014.7031, eta_loss=-5402.8149
+2025-12-14 13:51:11,959 
+epoch: 4001
+2025-12-14 13:51:12,020 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.86 GB, total: 19.53 GB
+2025-12-14 13:51:12,021 [verbose] using visualization batch size: 4
+2025-12-14 13:51:12,023 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:51:12,057 [verbose] integration complete (batch mode)
+2025-12-14 13:51:12,365 [verbose] models set back to train mode
+2025-12-14 13:51:12,480 saved checkpoint at epoch 4001 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:51:29,713 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4101: loss=-66194.4609, b_loss=-60794.6172, eta_loss=-5399.8467
+2025-12-14 13:51:46,939 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4201: loss=-53716.0938, b_loss=-48638.4336, eta_loss=-5077.6602
+2025-12-14 13:52:04,170 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4301: loss=-52630.8672, b_loss=-47681.0234, eta_loss=-4949.8433
+2025-12-14 13:52:21,398 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4401: loss=-47340.0625, b_loss=-42254.8047, eta_loss=-5085.2573
+2025-12-14 13:52:38,620 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4501: loss=-64017.6953, b_loss=-59060.0859, eta_loss=-4957.6113
+2025-12-14 13:52:38,620 
+epoch: 4501
+2025-12-14 13:52:38,683 [verbose] cleared cuda cache, allocated: 0.45 GB, reserved: 0.85 GB, total: 19.53 GB
+2025-12-14 13:52:38,683 [verbose] using visualization batch size: 4
+2025-12-14 13:52:38,686 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:52:38,720 [verbose] integration complete (batch mode)
+2025-12-14 13:52:39,017 [verbose] models set back to train mode
+2025-12-14 13:52:39,122 saved checkpoint at epoch 4501 for path=linear, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 13:52:56,375 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4601: loss=-58211.1797, b_loss=-53166.6719, eta_loss=-5044.5098
+2025-12-14 13:53:13,611 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4701: loss=-65965.4219, b_loss=-61010.1406, eta_loss=-4955.2852
+2025-12-14 13:53:30,856 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4801: loss=-67470.2422, b_loss=-62445.4258, eta_loss=-5024.8135
+2025-12-14 13:53:48,108 [path=linear | gamma_type=sinesquared | eps=eps-0.25] epoch 4901: loss=-64962.1445, b_loss=-59705.8398, eta_loss=-5256.3052
+2025-12-14 13:54:05,187 
+training complete for path=linear, gamma_type=sinesquared
+
+2025-12-14 13:54:05,187 
+using interpolant: path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:54:05,188 run log started for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:54:05,188 log file: logs/cifar10_dog_patch6x6_np4_eps-0.25/20251214_135405_linear_sigmoid_eps-0.25.log
+2025-12-14 13:54:05,188 
+creating u-net architectures...
+2025-12-14 13:54:05,192 b network parameters: 9,402,371
+2025-12-14 13:54:05,192 eta network parameters: 9,402,371
+2025-12-14 13:54:05,192 
+starting training...
+
+2025-12-14 13:54:05,370 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1: loss=3618.0042, b_loss=2242.4556, eta_loss=1375.5486
+2025-12-14 13:54:05,370 
+epoch: 1
+2025-12-14 13:54:05,429 [verbose] cleared cuda cache, allocated: 0.71 GB, reserved: 1.10 GB, total: 19.53 GB
+2025-12-14 13:54:05,429 [verbose] using visualization batch size: 4
+2025-12-14 13:54:05,432 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:54:05,466 [verbose] integration complete (batch mode)
+2025-12-14 13:54:05,739 [verbose] models set back to train mode
+2025-12-14 13:54:05,853 saved checkpoint at epoch 1 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:54:23,125 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 101: loss=-2822.9067, b_loss=78.7301, eta_loss=-2901.6367
+2025-12-14 13:54:40,383 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 201: loss=-3924.9260, b_loss=-297.2629, eta_loss=-3627.6631
+2025-12-14 13:54:57,639 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 301: loss=-3845.1101, b_loss=-295.2137, eta_loss=-3549.8965
+2025-12-14 13:55:14,900 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 401: loss=-12965.2070, b_loss=-8813.1680, eta_loss=-4152.0396
+2025-12-14 13:55:32,159 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 501: loss=-13600.5156, b_loss=-9003.6816, eta_loss=-4596.8345
+2025-12-14 13:55:32,159 
+epoch: 501
+2025-12-14 13:55:32,222 [verbose] cleared cuda cache, allocated: 0.70 GB, reserved: 1.14 GB, total: 19.53 GB
+2025-12-14 13:55:32,222 [verbose] using visualization batch size: 4
+2025-12-14 13:55:32,225 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:55:32,259 [verbose] integration complete (batch mode)
+2025-12-14 13:55:32,550 [verbose] models set back to train mode
+2025-12-14 13:55:32,654 saved checkpoint at epoch 501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:55:49,906 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 601: loss=-16757.9746, b_loss=-12504.5127, eta_loss=-4253.4619
+2025-12-14 13:56:07,161 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 701: loss=-19199.3438, b_loss=-14505.2559, eta_loss=-4694.0889
+2025-12-14 13:56:24,412 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 801: loss=-16416.2285, b_loss=-12000.6504, eta_loss=-4415.5781
+2025-12-14 13:56:41,663 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 901: loss=-11551.0557, b_loss=-7550.4658, eta_loss=-4000.5901
+2025-12-14 13:56:58,918 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1001: loss=-15837.7051, b_loss=-11474.7246, eta_loss=-4362.9810
+2025-12-14 13:56:58,918 
+epoch: 1001
+2025-12-14 13:56:58,979 [verbose] cleared cuda cache, allocated: 0.70 GB, reserved: 1.19 GB, total: 19.53 GB
+2025-12-14 13:56:58,980 [verbose] using visualization batch size: 4
+2025-12-14 13:56:58,982 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:56:59,016 [verbose] integration complete (batch mode)
+2025-12-14 13:56:59,298 [verbose] models set back to train mode
+2025-12-14 13:56:59,414 saved checkpoint at epoch 1001 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:57:16,689 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1101: loss=-13240.3809, b_loss=-8741.8896, eta_loss=-4498.4907
+2025-12-14 13:57:33,949 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1201: loss=-16122.8906, b_loss=-11906.9951, eta_loss=-4215.8955
+2025-12-14 13:57:51,213 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1301: loss=-17641.7930, b_loss=-13277.7529, eta_loss=-4364.0400
+2025-12-14 13:58:08,482 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1401: loss=-12550.9785, b_loss=-8618.1699, eta_loss=-3932.8081
+2025-12-14 13:58:25,732 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1501: loss=-18057.7617, b_loss=-13234.9766, eta_loss=-4822.7852
+2025-12-14 13:58:25,733 
+epoch: 1501
+2025-12-14 13:58:25,792 [verbose] cleared cuda cache, allocated: 0.70 GB, reserved: 1.17 GB, total: 19.53 GB
+2025-12-14 13:58:25,793 [verbose] using visualization batch size: 4
+2025-12-14 13:58:25,795 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:58:25,829 [verbose] integration complete (batch mode)
+2025-12-14 13:58:26,128 [verbose] models set back to train mode
+2025-12-14 13:58:26,234 saved checkpoint at epoch 1501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 13:58:44,259 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1601: loss=-16690.1562, b_loss=-11927.0547, eta_loss=-4763.1025
+2025-12-14 13:59:01,521 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1701: loss=-14165.6934, b_loss=-9777.1035, eta_loss=-4388.5903
+2025-12-14 13:59:18,809 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1801: loss=-14240.2842, b_loss=-9892.5693, eta_loss=-4347.7148
+2025-12-14 13:59:36,092 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 1901: loss=-14217.6670, b_loss=-10095.8721, eta_loss=-4121.7949
+2025-12-14 13:59:53,386 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2001: loss=-14785.5254, b_loss=-10320.8008, eta_loss=-4464.7251
+2025-12-14 13:59:53,386 
+epoch: 2001
+2025-12-14 13:59:53,456 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.68 GB, total: 19.53 GB
+2025-12-14 13:59:53,456 [verbose] using visualization batch size: 4
+2025-12-14 13:59:53,459 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 13:59:53,493 [verbose] integration complete (batch mode)
+2025-12-14 13:59:53,791 [verbose] models set back to train mode
+2025-12-14 13:59:53,895 saved checkpoint at epoch 2001 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:00:11,172 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2101: loss=-17291.5273, b_loss=-12688.6855, eta_loss=-4602.8413
+2025-12-14 14:00:28,441 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2201: loss=-16761.6348, b_loss=-12023.8740, eta_loss=-4737.7603
+2025-12-14 14:00:45,714 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2301: loss=-18547.4980, b_loss=-13776.4199, eta_loss=-4771.0781
+2025-12-14 14:01:02,980 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2401: loss=-13595.6621, b_loss=-9251.4023, eta_loss=-4344.2598
+2025-12-14 14:01:20,253 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2501: loss=-17533.3398, b_loss=-13053.8867, eta_loss=-4479.4521
+2025-12-14 14:01:20,253 
+epoch: 2501
+2025-12-14 14:01:20,315 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.75 GB, total: 19.53 GB
+2025-12-14 14:01:20,315 [verbose] using visualization batch size: 4
+2025-12-14 14:01:20,318 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:01:20,352 [verbose] integration complete (batch mode)
+2025-12-14 14:01:20,636 [verbose] models set back to train mode
+2025-12-14 14:01:20,739 saved checkpoint at epoch 2501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:01:38,013 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2601: loss=-18835.5059, b_loss=-13902.7031, eta_loss=-4932.8022
+2025-12-14 14:01:55,286 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2701: loss=-14950.3809, b_loss=-10613.8789, eta_loss=-4336.5024
+2025-12-14 14:02:12,561 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2801: loss=-16279.9395, b_loss=-11830.0771, eta_loss=-4449.8623
+2025-12-14 14:02:29,831 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 2901: loss=-15973.9863, b_loss=-11285.7090, eta_loss=-4688.2769
+2025-12-14 14:02:47,098 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3001: loss=-14468.5391, b_loss=-10245.0918, eta_loss=-4223.4473
+2025-12-14 14:02:47,098 
+epoch: 3001
+2025-12-14 14:02:47,158 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.72 GB, total: 19.53 GB
+2025-12-14 14:02:47,159 [verbose] using visualization batch size: 4
+2025-12-14 14:02:47,161 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:02:47,195 [verbose] integration complete (batch mode)
+2025-12-14 14:02:47,483 [verbose] models set back to train mode
+2025-12-14 14:02:47,587 saved checkpoint at epoch 3001 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:03:04,858 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3101: loss=-16632.9629, b_loss=-11968.3818, eta_loss=-4664.5815
+2025-12-14 14:03:22,121 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3201: loss=-16521.4316, b_loss=-11642.0352, eta_loss=-4879.3970
+2025-12-14 14:03:39,392 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3301: loss=-14215.7988, b_loss=-9918.0234, eta_loss=-4297.7749
+2025-12-14 14:03:56,655 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3401: loss=-16013.5156, b_loss=-11437.4014, eta_loss=-4576.1147
+2025-12-14 14:04:13,922 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3501: loss=-16614.3984, b_loss=-11844.3984, eta_loss=-4770.0000
+2025-12-14 14:04:13,922 
+epoch: 3501
+2025-12-14 14:04:13,983 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.72 GB, total: 19.53 GB
+2025-12-14 14:04:13,983 [verbose] using visualization batch size: 4
+2025-12-14 14:04:13,985 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:04:14,019 [verbose] integration complete (batch mode)
+2025-12-14 14:04:14,324 [verbose] models set back to train mode
+2025-12-14 14:04:14,429 saved checkpoint at epoch 3501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:04:31,692 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3601: loss=-17774.6016, b_loss=-13205.6396, eta_loss=-4568.9629
+2025-12-14 14:04:48,958 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3701: loss=-15771.3281, b_loss=-11306.4141, eta_loss=-4464.9141
+2025-12-14 14:05:06,228 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3801: loss=-11724.5723, b_loss=-7554.6104, eta_loss=-4169.9619
+2025-12-14 14:05:23,489 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 3901: loss=-18441.3613, b_loss=-13772.8154, eta_loss=-4668.5459
+2025-12-14 14:05:40,750 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4001: loss=-13356.7490, b_loss=-9048.2129, eta_loss=-4308.5361
+2025-12-14 14:05:40,750 
+epoch: 4001
+2025-12-14 14:05:40,812 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.72 GB, total: 19.53 GB
+2025-12-14 14:05:40,812 [verbose] using visualization batch size: 4
+2025-12-14 14:05:40,814 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:05:40,849 [verbose] integration complete (batch mode)
+2025-12-14 14:05:41,142 [verbose] models set back to train mode
+2025-12-14 14:05:41,247 saved checkpoint at epoch 4001 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:05:58,494 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4101: loss=-18608.2656, b_loss=-13917.3594, eta_loss=-4690.9053
+2025-12-14 14:06:15,729 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4201: loss=-17792.2656, b_loss=-12918.6270, eta_loss=-4873.6377
+2025-12-14 14:06:32,970 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4301: loss=-16917.3750, b_loss=-12266.3789, eta_loss=-4650.9971
+2025-12-14 14:06:50,210 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4401: loss=-15217.4434, b_loss=-11110.0801, eta_loss=-4107.3633
+2025-12-14 14:07:07,454 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4501: loss=-16871.6211, b_loss=-11949.2002, eta_loss=-4922.4204
+2025-12-14 14:07:07,454 
+epoch: 4501
+2025-12-14 14:07:07,514 [verbose] cleared cuda cache, allocated: 0.37 GB, reserved: 0.72 GB, total: 19.53 GB
+2025-12-14 14:07:07,515 [verbose] using visualization batch size: 4
+2025-12-14 14:07:07,517 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:07:07,551 [verbose] integration complete (batch mode)
+2025-12-14 14:07:07,831 [verbose] models set back to train mode
+2025-12-14 14:07:07,942 saved checkpoint at epoch 4501 for path=linear, gamma_type=sigmoid, epsilon=eps-0.25
+2025-12-14 14:07:25,194 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4601: loss=-14937.9307, b_loss=-10206.2734, eta_loss=-4731.6572
+2025-12-14 14:07:42,449 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4701: loss=-16839.3672, b_loss=-12621.6230, eta_loss=-4217.7451
+2025-12-14 14:07:59,700 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4801: loss=-19027.4336, b_loss=-14197.7979, eta_loss=-4829.6348
+2025-12-14 14:08:16,950 [path=linear | gamma_type=sigmoid | eps=eps-0.25] epoch 4901: loss=-15288.7324, b_loss=-10726.5977, eta_loss=-4562.1343
+2025-12-14 14:08:34,025 
+training complete for path=linear, gamma_type=sigmoid
+
+2025-12-14 14:08:34,025 
+using interpolant: path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:08:34,025 run log started for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:08:34,025 log file: logs/cifar10_dog_patch6x6_np4_eps-0.25/20251214_140834_trig_bsquared_eps-0.25.log
+2025-12-14 14:08:34,025 
+creating u-net architectures...
+2025-12-14 14:08:34,029 b network parameters: 9,402,371
+2025-12-14 14:08:34,029 eta network parameters: 9,402,371
+2025-12-14 14:08:34,029 
+starting training...
+
+2025-12-14 14:08:34,206 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1: loss=3866.6611, b_loss=2621.7227, eta_loss=1244.9386
+2025-12-14 14:08:34,206 
+epoch: 1
+2025-12-14 14:08:34,266 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.95 GB, total: 19.53 GB
+2025-12-14 14:08:34,266 [verbose] using visualization batch size: 4
+2025-12-14 14:08:34,268 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:08:34,303 [verbose] integration complete (batch mode)
+2025-12-14 14:08:34,575 [verbose] models set back to train mode
+2025-12-14 14:08:34,683 saved checkpoint at epoch 1 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:08:51,945 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 101: loss=-6770.2949, b_loss=-3067.5447, eta_loss=-3702.7500
+2025-12-14 14:09:09,220 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 201: loss=-7674.4219, b_loss=-3396.9893, eta_loss=-4277.4326
+2025-12-14 14:09:26,491 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 301: loss=-9737.4473, b_loss=-5334.9185, eta_loss=-4402.5283
+2025-12-14 14:09:43,762 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 401: loss=-11366.9580, b_loss=-7033.8809, eta_loss=-4333.0771
+2025-12-14 14:10:01,031 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 501: loss=-10700.0625, b_loss=-6084.8760, eta_loss=-4615.1865
+2025-12-14 14:10:01,031 
+epoch: 501
+2025-12-14 14:10:01,094 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:10:01,094 [verbose] using visualization batch size: 4
+2025-12-14 14:10:01,096 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:10:01,130 [verbose] integration complete (batch mode)
+2025-12-14 14:10:01,421 [verbose] models set back to train mode
+2025-12-14 14:10:01,528 saved checkpoint at epoch 501 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:10:18,947 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 601: loss=-10887.5576, b_loss=-6717.6650, eta_loss=-4169.8926
+2025-12-14 14:10:36,201 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 701: loss=-11559.9453, b_loss=-6847.4004, eta_loss=-4712.5449
+2025-12-14 14:10:53,450 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 801: loss=-12380.7715, b_loss=-7715.2144, eta_loss=-4665.5566
+2025-12-14 14:11:10,695 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 901: loss=-11017.3750, b_loss=-6004.6279, eta_loss=-5012.7471
+2025-12-14 14:11:27,941 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1001: loss=-11253.1934, b_loss=-6768.6909, eta_loss=-4484.5020
+2025-12-14 14:11:27,941 
+epoch: 1001
+2025-12-14 14:11:28,004 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:11:28,004 [verbose] using visualization batch size: 4
+2025-12-14 14:11:28,006 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:11:28,041 [verbose] integration complete (batch mode)
+2025-12-14 14:11:28,341 [verbose] models set back to train mode
+2025-12-14 14:11:28,455 saved checkpoint at epoch 1001 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:11:45,710 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1101: loss=-9705.8818, b_loss=-4985.9902, eta_loss=-4719.8916
+2025-12-14 14:12:02,958 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1201: loss=-11219.4014, b_loss=-6358.7646, eta_loss=-4860.6367
+2025-12-14 14:12:20,213 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1301: loss=-11431.4189, b_loss=-6734.2061, eta_loss=-4697.2129
+2025-12-14 14:12:37,472 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1401: loss=-12563.4111, b_loss=-8003.2422, eta_loss=-4560.1689
+2025-12-14 14:12:54,723 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1501: loss=-9569.9395, b_loss=-4764.7490, eta_loss=-4805.1909
+2025-12-14 14:12:54,723 
+epoch: 1501
+2025-12-14 14:12:54,786 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:12:54,786 [verbose] using visualization batch size: 4
+2025-12-14 14:12:54,788 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:12:54,822 [verbose] integration complete (batch mode)
+2025-12-14 14:12:55,125 [verbose] models set back to train mode
+2025-12-14 14:12:55,241 saved checkpoint at epoch 1501 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:13:12,495 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1601: loss=-11722.3477, b_loss=-6877.8711, eta_loss=-4844.4771
+2025-12-14 14:13:29,740 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1701: loss=-10664.5547, b_loss=-5678.1836, eta_loss=-4986.3711
+2025-12-14 14:13:46,983 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1801: loss=-10913.6934, b_loss=-5928.2021, eta_loss=-4985.4907
+2025-12-14 14:14:04,229 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 1901: loss=-10744.5879, b_loss=-5774.3188, eta_loss=-4970.2686
+2025-12-14 14:14:21,473 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2001: loss=-10605.8076, b_loss=-5838.4072, eta_loss=-4767.4004
+2025-12-14 14:14:21,473 
+epoch: 2001
+2025-12-14 14:14:21,535 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:14:21,536 [verbose] using visualization batch size: 4
+2025-12-14 14:14:21,538 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:14:21,572 [verbose] integration complete (batch mode)
+2025-12-14 14:14:21,883 [verbose] models set back to train mode
+2025-12-14 14:14:21,998 saved checkpoint at epoch 2001 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:14:39,245 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2101: loss=-11451.0771, b_loss=-6568.6465, eta_loss=-4882.4307
+2025-12-14 14:14:56,491 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2201: loss=-12150.5879, b_loss=-7142.1357, eta_loss=-5008.4521
+2025-12-14 14:15:13,745 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2301: loss=-11501.0186, b_loss=-6525.9355, eta_loss=-4975.0830
+2025-12-14 14:15:30,997 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2401: loss=-11612.5566, b_loss=-6773.5962, eta_loss=-4838.9600
+2025-12-14 14:15:48,249 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2501: loss=-11423.0918, b_loss=-6603.2002, eta_loss=-4819.8916
+2025-12-14 14:15:48,249 
+epoch: 2501
+2025-12-14 14:15:48,312 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:15:48,312 [verbose] using visualization batch size: 4
+2025-12-14 14:15:48,314 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:15:48,349 [verbose] integration complete (batch mode)
+2025-12-14 14:15:48,637 [verbose] models set back to train mode
+2025-12-14 14:15:48,748 saved checkpoint at epoch 2501 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:16:05,993 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2601: loss=-11180.5205, b_loss=-6366.2002, eta_loss=-4814.3203
+2025-12-14 14:16:23,234 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2701: loss=-10900.6680, b_loss=-6175.6689, eta_loss=-4724.9995
+2025-12-14 14:16:40,477 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2801: loss=-12358.6074, b_loss=-7581.2427, eta_loss=-4777.3652
+2025-12-14 14:16:57,716 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 2901: loss=-11979.9395, b_loss=-7182.6274, eta_loss=-4797.3115
+2025-12-14 14:17:14,960 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3001: loss=-11229.7578, b_loss=-6225.0591, eta_loss=-5004.6982
+2025-12-14 14:17:14,960 
+epoch: 3001
+2025-12-14 14:17:15,025 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:17:15,025 [verbose] using visualization batch size: 4
+2025-12-14 14:17:15,027 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:17:15,062 [verbose] integration complete (batch mode)
+2025-12-14 14:17:15,356 [verbose] models set back to train mode
+2025-12-14 14:17:15,470 saved checkpoint at epoch 3001 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:17:32,741 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3101: loss=-13914.2871, b_loss=-9163.1064, eta_loss=-4751.1807
+2025-12-14 14:17:50,002 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3201: loss=-12092.0068, b_loss=-7148.2520, eta_loss=-4943.7549
+2025-12-14 14:18:07,269 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3301: loss=-12957.7969, b_loss=-8017.1099, eta_loss=-4940.6875
+2025-12-14 14:18:24,529 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3401: loss=-11310.6768, b_loss=-6270.9883, eta_loss=-5039.6885
+2025-12-14 14:18:41,791 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3501: loss=-10011.0264, b_loss=-5042.2520, eta_loss=-4968.7744
+2025-12-14 14:18:41,791 
+epoch: 3501
+2025-12-14 14:18:41,854 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:18:41,854 [verbose] using visualization batch size: 4
+2025-12-14 14:18:41,856 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:18:41,890 [verbose] integration complete (batch mode)
+2025-12-14 14:18:42,193 [verbose] models set back to train mode
+2025-12-14 14:18:42,308 saved checkpoint at epoch 3501 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:18:59,566 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3601: loss=-12087.4248, b_loss=-7032.1221, eta_loss=-5055.3027
+2025-12-14 14:19:16,818 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3701: loss=-10358.1641, b_loss=-5261.0610, eta_loss=-5097.1025
+2025-12-14 14:19:34,060 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3801: loss=-12561.1348, b_loss=-7701.4731, eta_loss=-4859.6616
+2025-12-14 14:19:51,297 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 3901: loss=-10703.9082, b_loss=-5804.8906, eta_loss=-4899.0171
+2025-12-14 14:20:08,544 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4001: loss=-13105.2461, b_loss=-8174.3765, eta_loss=-4930.8691
+2025-12-14 14:20:08,545 
+epoch: 4001
+2025-12-14 14:20:08,608 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:20:08,608 [verbose] using visualization batch size: 4
+2025-12-14 14:20:08,610 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:20:08,644 [verbose] integration complete (batch mode)
+2025-12-14 14:20:08,940 [verbose] models set back to train mode
+2025-12-14 14:20:09,047 saved checkpoint at epoch 4001 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:20:26,308 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4101: loss=-10641.0996, b_loss=-5530.5068, eta_loss=-5110.5928
+2025-12-14 14:20:43,563 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4201: loss=-12362.6953, b_loss=-7468.8779, eta_loss=-4893.8174
+2025-12-14 14:21:00,821 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4301: loss=-12151.1309, b_loss=-7175.7139, eta_loss=-4975.4170
+2025-12-14 14:21:18,059 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4401: loss=-13870.2666, b_loss=-9190.3916, eta_loss=-4679.8750
+2025-12-14 14:21:35,302 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4501: loss=-11975.7490, b_loss=-7137.0879, eta_loss=-4838.6611
+2025-12-14 14:21:35,302 
+epoch: 4501
+2025-12-14 14:21:35,364 [verbose] cleared cuda cache, allocated: 0.63 GB, reserved: 0.97 GB, total: 19.53 GB
+2025-12-14 14:21:35,364 [verbose] using visualization batch size: 4
+2025-12-14 14:21:35,367 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:21:35,401 [verbose] integration complete (batch mode)
+2025-12-14 14:21:35,684 [verbose] models set back to train mode
+2025-12-14 14:21:35,792 saved checkpoint at epoch 4501 for path=trig, gamma_type=bsquared, epsilon=eps-0.25
+2025-12-14 14:21:53,045 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4601: loss=-11985.2402, b_loss=-6856.1045, eta_loss=-5129.1353
+2025-12-14 14:22:10,289 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4701: loss=-10342.6172, b_loss=-5348.4141, eta_loss=-4994.2031
+2025-12-14 14:22:27,534 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4801: loss=-12440.8926, b_loss=-7419.8770, eta_loss=-5021.0161
+2025-12-14 14:22:44,781 [path=trig | gamma_type=bsquared | eps=eps-0.25] epoch 4901: loss=-11109.6201, b_loss=-6043.8887, eta_loss=-5065.7314
+2025-12-14 14:23:01,865 
+training complete for path=trig, gamma_type=bsquared
+
+2025-12-14 14:23:01,865 
+using interpolant: path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:23:01,865 run log started for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:23:01,865 log file: logs/cifar10_dog_patch6x6_np4_eps-0.25/20251214_142301_trig_sinesquared_eps-0.25.log
+2025-12-14 14:23:01,865 
+creating u-net architectures...
+2025-12-14 14:23:01,912 b network parameters: 9,402,371
+2025-12-14 14:23:01,912 eta network parameters: 9,402,371
+2025-12-14 14:23:01,913 
+starting training...
+
+2025-12-14 14:23:02,212 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1: loss=3418.9944, b_loss=3062.7544, eta_loss=356.2400
+2025-12-14 14:23:02,213 
+epoch: 1
+2025-12-14 14:23:02,272 [verbose] cleared cuda cache, allocated: 0.88 GB, reserved: 1.29 GB, total: 19.53 GB
+2025-12-14 14:23:02,273 [verbose] using visualization batch size: 4
+2025-12-14 14:23:02,275 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:23:02,309 [verbose] integration complete (batch mode)
+2025-12-14 14:23:02,589 [verbose] models set back to train mode
+2025-12-14 14:23:02,711 saved checkpoint at epoch 1 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:23:19,981 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 101: loss=-3459.8154, b_loss=1418.2100, eta_loss=-4878.0254
+2025-12-14 14:23:37,092 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 201: loss=nan, b_loss=nan, eta_loss=-4778.9790
+2025-12-14 14:23:54,121 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 301: loss=nan, b_loss=nan, eta_loss=-5010.2275
+2025-12-14 14:24:11,160 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 401: loss=nan, b_loss=nan, eta_loss=-5218.5098
+2025-12-14 14:24:28,194 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 501: loss=nan, b_loss=nan, eta_loss=-4638.4248
+2025-12-14 14:24:28,194 
+epoch: 501
+2025-12-14 14:24:28,254 [verbose] cleared cuda cache, allocated: 0.88 GB, reserved: 1.33 GB, total: 19.53 GB
+2025-12-14 14:24:28,255 [verbose] using visualization batch size: 4
+2025-12-14 14:24:28,257 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:24:28,291 [verbose] integration complete (batch mode)
+2025-12-14 14:24:28,576 [verbose] models set back to train mode
+2025-12-14 14:24:28,681 saved checkpoint at epoch 501 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:24:45,740 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 601: loss=nan, b_loss=nan, eta_loss=-4555.7866
+2025-12-14 14:25:02,793 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 701: loss=nan, b_loss=nan, eta_loss=-5006.8145
+2025-12-14 14:25:19,851 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 801: loss=nan, b_loss=nan, eta_loss=-4859.2168
+2025-12-14 14:25:36,906 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 901: loss=nan, b_loss=nan, eta_loss=-4970.7988
+2025-12-14 14:25:53,959 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1001: loss=nan, b_loss=nan, eta_loss=-4645.1953
+2025-12-14 14:25:53,959 
+epoch: 1001
+2025-12-14 14:25:54,019 [verbose] cleared cuda cache, allocated: 0.88 GB, reserved: 1.34 GB, total: 19.53 GB
+2025-12-14 14:25:54,019 [verbose] using visualization batch size: 4
+2025-12-14 14:25:54,021 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:25:54,055 [verbose] integration complete (batch mode)
+2025-12-14 14:25:54,337 [verbose] models set back to train mode
+2025-12-14 14:25:54,467 saved checkpoint at epoch 1001 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:26:11,518 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1101: loss=nan, b_loss=nan, eta_loss=-4864.2725
+2025-12-14 14:26:28,567 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1201: loss=nan, b_loss=nan, eta_loss=-5203.7178
+2025-12-14 14:26:45,600 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1301: loss=nan, b_loss=nan, eta_loss=-5191.6562
+2025-12-14 14:27:02,638 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1401: loss=nan, b_loss=nan, eta_loss=-5149.0010
+2025-12-14 14:27:19,679 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1501: loss=nan, b_loss=nan, eta_loss=-5205.6860
+2025-12-14 14:27:19,679 
+epoch: 1501
+2025-12-14 14:27:19,740 [verbose] cleared cuda cache, allocated: 0.88 GB, reserved: 1.31 GB, total: 19.53 GB
+2025-12-14 14:27:19,740 [verbose] using visualization batch size: 4
+2025-12-14 14:27:19,742 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:27:19,776 [verbose] integration complete (batch mode)
+2025-12-14 14:27:20,996 [verbose] models set back to train mode
+2025-12-14 14:27:21,113 saved checkpoint at epoch 1501 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:27:38,177 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1601: loss=nan, b_loss=nan, eta_loss=-4834.4253
+2025-12-14 14:27:55,240 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1701: loss=nan, b_loss=nan, eta_loss=-5163.0547
+2025-12-14 14:28:12,300 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1801: loss=nan, b_loss=nan, eta_loss=-4939.1123
+2025-12-14 14:28:29,350 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 1901: loss=nan, b_loss=nan, eta_loss=-4931.7158
+2025-12-14 14:28:46,401 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2001: loss=nan, b_loss=nan, eta_loss=-5020.5449
+2025-12-14 14:28:46,401 
+epoch: 2001
+2025-12-14 14:28:46,467 [verbose] cleared cuda cache, allocated: 0.38 GB, reserved: 0.70 GB, total: 19.53 GB
+2025-12-14 14:28:46,467 [verbose] using visualization batch size: 4
+2025-12-14 14:28:46,470 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:28:46,504 [verbose] integration complete (batch mode)
+2025-12-14 14:28:46,805 [verbose] models set back to train mode
+2025-12-14 14:28:46,916 saved checkpoint at epoch 2001 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:29:03,968 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2101: loss=nan, b_loss=nan, eta_loss=-4933.1743
+2025-12-14 14:29:21,008 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2201: loss=nan, b_loss=nan, eta_loss=-4529.9844
+2025-12-14 14:29:38,044 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2301: loss=nan, b_loss=nan, eta_loss=-5161.0635
+2025-12-14 14:29:55,093 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2401: loss=nan, b_loss=nan, eta_loss=-5009.1631
+2025-12-14 14:30:12,142 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2501: loss=nan, b_loss=nan, eta_loss=-5270.3584
+2025-12-14 14:30:12,142 
+epoch: 2501
+2025-12-14 14:30:12,204 [verbose] cleared cuda cache, allocated: 0.38 GB, reserved: 0.67 GB, total: 19.53 GB
+2025-12-14 14:30:12,204 [verbose] using visualization batch size: 4
+2025-12-14 14:30:12,207 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-14 14:30:12,241 [verbose] integration complete (batch mode)
+2025-12-14 14:30:12,524 [verbose] models set back to train mode
+2025-12-14 14:30:12,636 saved checkpoint at epoch 2501 for path=trig, gamma_type=sinesquared, epsilon=eps-0.25
+2025-12-14 14:30:29,674 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2601: loss=nan, b_loss=nan, eta_loss=-4979.2520
+2025-12-14 14:30:46,709 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2701: loss=nan, b_loss=nan, eta_loss=-5070.6025
+2025-12-14 14:31:03,747 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2801: loss=nan, b_loss=nan, eta_loss=-4928.0986
+2025-12-14 14:31:20,781 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2901: loss=nan, b_loss=nan, eta_loss=-4754.8452

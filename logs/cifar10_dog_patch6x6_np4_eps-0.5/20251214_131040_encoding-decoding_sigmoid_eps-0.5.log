@@ -135,3 +135,12 @@ epoch: 4501
 2025-12-14 13:23:44,741 saved checkpoint at epoch 4501 for path=encoding-decoding, gamma_type=sigmoid, epsilon=eps-0.5
 2025-12-14 13:24:02,021 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4601: loss=-27984.2109, b_loss=-23317.1406, eta_loss=-4667.0713
 2025-12-14 13:24:19,304 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4701: loss=-30956.0605, b_loss=-26596.2773, eta_loss=-4359.7832
+2025-12-14 13:24:36,605 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4801: loss=-32307.6328, b_loss=-27572.2812, eta_loss=-4735.3525
+2025-12-14 13:24:53,931 [path=encoding-decoding | gamma_type=sigmoid | eps=eps-0.5] epoch 4901: loss=-32982.8750, b_loss=-28253.3164, eta_loss=-4729.5601
+2025-12-14 13:25:11,046 
+training complete for path=encoding-decoding, gamma_type=sigmoid
+
+2025-12-14 13:25:11,046 
+using epsilon: 0.25 (eps-0.25)
+2025-12-14 13:25:11,046 
+using interpolant: path=linear, gamma_type=bsquared, epsilon=eps-0.25
