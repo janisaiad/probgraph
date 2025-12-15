@@ -1986,3 +1986,18 @@ epoch: 2501
 2025-12-14 14:30:46,709 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2701: loss=nan, b_loss=nan, eta_loss=-5070.6025
 2025-12-14 14:31:03,747 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2801: loss=nan, b_loss=nan, eta_loss=-4928.0986
 2025-12-14 14:31:20,781 [path=trig | gamma_type=sinesquared | eps=eps-0.25] epoch 2901: loss=nan, b_loss=nan, eta_loss=-4754.8452
+2025-12-15 20:15:59,154 cuda available, setting default tensor residence to gpu
+2025-12-15 20:15:59,154 cuda
+2025-12-15 20:15:59,154 torch version: 2.9.1+cu128
+2025-12-15 20:15:59,154 [verbose] === starting dataset loading process ===
+2025-12-15 20:15:59,154 [verbose] max_samples: None
+2025-12-15 20:15:59,154 [verbose] loading celebA dataset...
+2025-12-15 20:15:59,154 [verbose] celebA root: /Data/data/celeba
+2025-12-15 20:15:59,154 [verbose] using transform: Resize(64x64) -> ToTensor -> Normalize
+2025-12-15 20:15:59,201 [verbose] ✓ gdown is already installed
+2025-12-15 20:16:04,539 [verbose] ✓ celebA loaded successfully
+2025-12-15 20:16:04,540 
+loaded celebA train: 162770 images
+2025-12-15 20:16:04,540 [verbose] === dataset loading complete ===
+2025-12-15 20:16:04,540 [verbose] final trainset size: 162770 images
+2025-12-15 20:16:04,540 [verbose] device: cuda
