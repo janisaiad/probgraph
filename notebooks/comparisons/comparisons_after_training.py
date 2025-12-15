@@ -156,49 +156,53 @@ def create_comparison_plot(
     patch_size: int = 6,
     num_patches: int = 4
 ):
-    """we create a comparison plot showing original, masked, and all reconstructions"""
+    """we create a comparison plot showing original, masked, and all reconstructions (single row only)"""
     num_models = len(reconstructions)  # we count models
-    num_samples = original_imgs.shape[0]  # we get number of test images
+    # we use only the first image for single row comparison
+    original_img = original_imgs[0:1]  # we take first image
+    masked_img = masked_imgs[0:1]  # we take first masked image
+    reconstructions_first = {k: v[0:1] for k, v in reconstructions.items()}  # we take first reconstruction for each model
     
-    # we compute grid dimensions
+    # we compute grid dimensions (single row)
     ncols = 2 + num_models  # original + masked + reconstructions
-    nrows = num_samples  # one row per sample
+    nrows = 1  # single row only
     
-    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 2.5, nrows * 2.5))  # we create figure
-    
-    if nrows == 1:  # we handle single row case
-        axes = axes[None, :]  # we add row dimension
+    fig, axes = plt.subplots(nrows, ncols, figsize=(ncols * 2.5, 3.0))  # we create figure with single row
     
     def denorm(img):
         """we denormalize and clamp to [0,1] for visualization"""
         denormed = img * 0.5 + 0.5  # we denormalize from [-1,1] to [0,1]
         return torch.clamp(denormed, 0.0, 1.0)  # we clamp to valid range
     
-    for i in range(num_samples):  # we iterate over samples
-        # we show original image
-        img_orig = np.transpose(grab(denorm(original_imgs[i])), (1, 2, 0))  # we denormalize and transpose
-        axes[i, 0].imshow(img_orig)  # we display image
-        axes[i, 0].axis('off')  # we remove axes
-        if i == 0:
-            axes[i, 0].set_title('original', fontsize=10)  # we set title
-        
-        # we show masked image
-        img_masked = np.transpose(grab(denorm(masked_imgs[i])), (1, 2, 0))  # we denormalize and transpose
-        axes[i, 1].imshow(img_masked)  # we display image
-        axes[i, 1].axis('off')  # we remove axes
-        if i == 0:
-            axes[i, 1].set_title(f'masked\n(patch={patch_size}x{patch_size}, np={num_patches})', fontsize=10)  # we set title
-        
-        # we show reconstructions
-        for idx, (model_name, recon) in enumerate(sorted(reconstructions.items())):  # we iterate over models
-            img_recon = np.transpose(grab(denorm(recon[i])), (1, 2, 0))  # we denormalize and transpose
-            axes[i, 2 + idx].imshow(img_recon)  # we display image
-            axes[i, 2 + idx].axis('off')  # we remove axes
-            if i == 0:
-                axes[i, 2 + idx].set_title(model_name.replace('_', '\n'), fontsize=9, wrap=True)  # we set title with line breaks
+    # we show original image
+    img_orig = np.transpose(grab(denorm(original_img[0])), (1, 2, 0))  # we denormalize and transpose
+    axes[0].imshow(img_orig)  # we display image
+    axes[0].axis('off')  # we remove axes
+    axes[0].set_title('original', fontsize=11, fontweight='bold')  # we set title
     
-    plt.suptitle(f'reconstruction comparison - {num_samples} samples', fontsize=12, y=0.995)
-    plt.tight_layout()
+    # we show masked image
+    img_masked = np.transpose(grab(denorm(masked_img[0])), (1, 2, 0))  # we denormalize and transpose
+    axes[1].imshow(img_masked)  # we display image
+    axes[1].axis('off')  # we remove axes
+    axes[1].set_title(f'masked\n(patch={patch_size}x{patch_size}, np={num_patches})', fontsize=10)  # we set title
+    
+    # we show reconstructions and prepare legend labels
+    sorted_models = sorted(reconstructions_first.items())  # we sort models for consistent ordering
+    legend_labels = []  # we collect legend labels
+    for idx, (model_name, recon) in enumerate(sorted_models):  # we iterate over models
+        img_recon = np.transpose(grab(denorm(recon[0])), (1, 2, 0))  # we denormalize and transpose
+        axes[2 + idx].imshow(img_recon)  # we display image
+        axes[2 + idx].axis('off')  # we remove axes
+        col_label = f"{idx + 1}. {model_name.replace('_', ' ')}"  # we create column label
+        axes[2 + idx].set_title(f"#{idx + 1}", fontsize=10, fontweight='bold')  # we set column number
+        legend_labels.append(col_label)  # we add to legend labels
+    
+    # we add legend at the bottom
+    legend_text = " | ".join([f"{idx + 1}: {name.replace('_', ' ')}" for idx, (name, _) in enumerate(sorted_models)])  # we create legend text
+    fig.text(0.5, 0.02, legend_text, ha='center', fontsize=9, family='monospace')  # we add legend at bottom
+    
+    plt.suptitle(f'reconstruction comparison', fontsize=13, y=0.98, fontweight='bold')
+    plt.tight_layout(rect=[0, 0.05, 1, 0.98])  # we adjust layout to make room for legend
     plt.savefig(save_path, dpi=150, bbox_inches="tight")  # we save figure
     plt.close()  # we close figure
     print(f"saved comparison plot to {save_path}")  # we log save
@@ -215,27 +219,112 @@ def main():
     num_test_samples = 8  # we set number of test images
     epoch = None  # we use latest checkpoint (set to int for specific epoch)
     
-    # we load dataset for test images
-    print(f"\nloading dataset for test images...")  # we log dataset loading
-    transform_cifar = transforms.Compose([
+    # we load dataset for test images (CelebA like in training script)
+    print(f"\nloading CelebA dataset for test images...")  # we log dataset loading
+    transform = transforms.Compose([
         transforms.Resize(IMAGE_SIZE),  # we resize to target size
         transforms.ToTensor(),  # we convert to tensor
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize
     ])
-    cifar10_root = os.path.join(_project_root, "data", "cifar10")  # we set cifar10 root
-    trainset_cifar = torchvision.datasets.CIFAR10(
-        root=cifar10_root, train=True, download=True, transform=transform_cifar
-    )  # we load cifar10
-    target_class = 5  # we select dog class
-    dog_indices = [i for i in range(len(trainset_cifar)) if trainset_cifar.targets[i] == target_class]  # we filter dog images
-    trainset = torch.utils.data.Subset(trainset_cifar, dog_indices)  # we create subset
-    print(f"loaded {len(trainset)} dog images")  # we log dataset size
+    celebA_root = os.path.join(_project_root, "data", "celeba")  # we set celebA root directory
+    print(f"CelebA root: {os.path.abspath(celebA_root)}")  # we log celebA root
+    try:  # we wrap in try-except for error handling
+        trainset = torchvision.datasets.CelebA(
+            root=celebA_root,  # we set celebA root directory
+            split="train",  # we use training split
+            download=True,  # we allow automatic download
+            transform=transform  # we apply preprocessing transforms
+        )  # we load celebA
+        print(f"✓ CelebA loaded successfully: {len(trainset)} images")  # we log success
+    except Exception as e:  # we catch loading errors
+        import traceback
+        print(f"✗ error loading CelebA: {e}")  # we log error
+        traceback.print_exc()
+        raise  # we re-raise to stop execution
     
-    # we generate fixed test images (same for all models)
-    print(f"\ngenerating {num_test_samples} fixed test images...")  # we log test generation
+    # we generate candidate test images and find the best one (lowest reconstruction error)
+    print(f"\ngenerating candidate test images and finding best reconstruction...")  # we log process
+    num_candidates = 50  # we test more candidates to find a good one
     torch.manual_seed(42)  # we set seed for reproducibility
-    indices = torch.randint(0, len(trainset), (num_test_samples,))  # we sample random indices
-    x1s_img = torch.stack([trainset[i][0] for i in indices]).to(itf.util.get_torch_device())  # we get test batch
+    candidate_indices = torch.randint(0, len(trainset), (num_candidates,))  # we sample candidate indices
+    candidate_imgs = torch.stack([trainset[i][0] for i in candidate_indices]).to(itf.util.get_torch_device())  # we get candidate batch
+    
+    # we create masks for candidates
+    candidate_masks = create_patch_mask(num_candidates, patch_size=patch_size, num_patches=num_patches)  # we create masks
+    candidate_noise = torch.randn_like(candidate_imgs) * (1 - candidate_masks)  # we create noise
+    candidate_masked = candidate_imgs * candidate_masks + candidate_noise  # we combine masked image and noise
+    candidate_x0s = candidate_masked.reshape(num_candidates, -1)  # we flatten for interpolant
+    
+    print(f"testing {num_candidates} candidate images to find best reconstruction...")  # we log testing
+    
+    # we load one model to test reconstruction quality (use first available model)
+    best_idx = 0  # we default to first image if no models available
+    best_error = float('inf')  # we initialize best error
+    
+    # we find first available checkpoint to test with
+    paths = ["linear", "trig", "encoding-decoding"]  # we define paths
+    gamma_types = ["bsquared", "sinesquared", "sigmoid"]  # we define gamma types
+    epsilon_tags = ["eps-none", "eps-0.5", "eps-0.25"]  # we define epsilon tags
+    dataset_tag_base = f"{DATASET_NAME}_patch{patch_size}x{patch_size}_np{num_patches}"
+    
+    test_model_found = False  # we track if we found a test model
+    
+    for epsilon_tag in epsilon_tags:  # we iterate over epsilon values
+        if test_model_found:  # we break if we found a model
+            break
+        full_dataset_tag = f"{dataset_tag_base}_{epsilon_tag}"  # we build full dataset tag
+        for path in paths:  # we iterate over paths
+            if test_model_found:  # we break if we found a model
+                break
+            for gamma_type in gamma_types:  # we iterate over gamma types
+                ckpt_path = find_latest_checkpoints(
+                    full_dataset_tag, path, gamma_type, epsilon_tag, epoch=epoch
+                )  # we find latest checkpoint
+                if ckpt_path is not None:  # we use first available model
+                    try:  # we try to load and test
+                        b, eta, config = load_model_from_checkpoint(ckpt_path, itf.util.get_torch_device())  # we load model
+                        interpolant = stochastic_interpolant.Interpolant(
+                            path=config["path"], gamma_type=config["gamma_type"]
+                        )  # we create interpolant
+                        interpolant.gamma_type = config["gamma_type"]  # we store gamma type
+                        
+                        print(f"using {path}_{gamma_type}_{epsilon_tag} to find best image...")  # we log model used
+                        
+                        # we reconstruct all candidates
+                        with torch.no_grad():  # we disable gradients
+                            xf_recon = reconstruct_with_model(b, eta, interpolant, candidate_x0s, n_step=50)  # we reconstruct
+                            xf_recon_img = xf_recon.reshape(num_candidates, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape
+                            
+                            # we compute mse for each candidate
+                            mse_per_image = torch.mean((xf_recon_img - candidate_imgs) ** 2, dim=(1, 2, 3))  # we compute mse per image
+                            best_idx = torch.argmin(mse_per_image).item()  # we find best image index
+                            best_error = mse_per_image[best_idx].item()  # we get best error
+                            
+                            print(f"best image index: {best_idx}, mse: {best_error:.6f}")  # we log best image
+                        
+                        # we clean up
+                        del b, eta, interpolant  # we delete models
+                        if torch.cuda.is_available():  # we clear cuda cache
+                            torch.cuda.empty_cache()
+                        test_model_found = True  # we mark as found
+                        break
+                    except Exception as e:  # we catch errors
+                        print(f"error testing with {path}_{gamma_type}_{epsilon_tag}: {e}")
+                        continue
+    
+    if not test_model_found:  # we warn if no model found
+        print("warning: no model found for testing, using first candidate image")
+        best_idx = 0  # we use first image
+    
+    # we select the best image and create test batch with fixed seed for reproducibility
+    print(f"\nusing best image (index {best_idx}, mse: {best_error:.6f}) for comparisons...")  # we log selection
+    torch.manual_seed(42)  # we set seed for reproducibility
+    selected_idx = candidate_indices[best_idx].item()  # we get selected index
+    # we select the best image and create test batch
+    best_image = candidate_imgs[best_idx:best_idx+1]  # we get best image
+    # we replicate the best image for multiple test samples with different masks
+    x1s_img = best_image.repeat(num_test_samples, 1, 1, 1)  # we replicate best image
+    # we create different masks for each test sample (but same base image)
     masks = create_patch_mask(num_test_samples, patch_size=patch_size, num_patches=num_patches)  # we create masks
     
     # we create masked images
@@ -245,6 +334,7 @@ def main():
     
     print(f"test images shape: {x1s_img.shape}")  # we log shape
     print(f"masked images shape: {x0s_img.shape}")  # we log shape
+    print(f"selected image index from dataset: {candidate_indices[best_idx].item()}, mse error: {best_error:.6f}")  # we log selection details
     
     # we define configurations to compare
     paths = ["linear", "trig", "encoding-decoding"]  # we define paths

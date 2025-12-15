@@ -2001,3 +2001,48 @@ loaded celebA train: 162770 images
 2025-12-15 20:16:04,540 [verbose] === dataset loading complete ===
 2025-12-15 20:16:04,540 [verbose] final trainset size: 162770 images
 2025-12-15 20:16:04,540 [verbose] device: cuda
+2025-12-15 20:28:27,202 cuda available, setting default tensor residence to gpu
+2025-12-15 20:28:27,202 cuda
+2025-12-15 20:28:27,202 torch version: 2.9.1+cu128
+2025-12-15 20:28:27,202 [verbose] === starting dataset loading process ===
+2025-12-15 20:28:27,202 [verbose] max_samples: None
+2025-12-15 20:28:27,202 [verbose] loading celebA dataset...
+2025-12-15 20:28:27,202 [verbose] celebA root: /Data/data/celeba
+2025-12-15 20:28:27,202 [verbose] using transform: Resize(64x64) -> ToTensor -> Normalize
+2025-12-15 20:28:27,252 [verbose] ✓ gdown is already installed
+2025-12-15 20:28:32,548 [verbose] ✓ celebA loaded successfully
+2025-12-15 20:28:32,548 
+loaded celebA train: 162770 images
+2025-12-15 20:28:32,548 [verbose] === dataset loading complete ===
+2025-12-15 20:28:32,548 [verbose] final trainset size: 162770 images
+2025-12-15 20:28:32,548 [verbose] device: cuda
+2025-12-15 20:33:35,311 cuda available, setting default tensor residence to gpu
+2025-12-15 20:33:35,311 cuda
+2025-12-15 20:33:35,311 torch version: 2.9.1+cu128
+2025-12-15 20:33:35,311 [verbose] === starting dataset loading process ===
+2025-12-15 20:33:35,311 [verbose] max_samples: None
+2025-12-15 20:33:35,311 [verbose] loading celebA dataset...
+2025-12-15 20:33:35,311 [verbose] celebA root: /Data/data/celeba
+2025-12-15 20:33:35,311 [verbose] using transform: Resize(64x64) -> ToTensor -> Normalize
+2025-12-15 20:33:35,358 [verbose] ✓ gdown is already installed
+2025-12-15 20:33:40,682 [verbose] ✓ celebA loaded successfully
+2025-12-15 20:33:40,682 
+loaded celebA train: 162770 images
+2025-12-15 20:33:40,682 [verbose] === dataset loading complete ===
+2025-12-15 20:33:40,682 [verbose] final trainset size: 162770 images
+2025-12-15 20:33:40,682 [verbose] device: cuda
+2025-12-15 20:39:35,097 cuda available, setting default tensor residence to gpu
+2025-12-15 20:39:35,097 cuda
+2025-12-15 20:39:35,097 torch version: 2.9.1+cu128
+2025-12-15 20:39:35,097 [verbose] === starting dataset loading process ===
+2025-12-15 20:39:35,097 [verbose] max_samples: None
+2025-12-15 20:39:35,097 [verbose] loading celebA dataset...
+2025-12-15 20:39:35,097 [verbose] celebA root: /Data/data/celeba
+2025-12-15 20:39:35,097 [verbose] using transform: Resize(64x64) -> ToTensor -> Normalize
+2025-12-15 20:39:35,145 [verbose] ✓ gdown is already installed
+2025-12-15 20:39:40,463 [verbose] ✓ celebA loaded successfully
+2025-12-15 20:39:40,463 
+loaded celebA train: 162770 images
+2025-12-15 20:39:40,463 [verbose] === dataset loading complete ===
+2025-12-15 20:39:40,463 [verbose] final trainset size: 162770 images
+2025-12-15 20:39:40,463 [verbose] device: cuda
