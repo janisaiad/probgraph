@@ -1,10 +1,13 @@
-# Project Name
+# ProbGraph: Exploring $\epsilon$ in Stochastic Interpolants
+
+**How much noise is enough?** This project explores the role of the diffusion coefficient $\epsilon$ in stochastic interpolants, investigating the trade-off between fidelity (preserving content) and robustness/diversity (exploring without collapsing) in score-based generative models.
 
 To get started, just run `./launch.sh`.
 
 
 
 ## Table of Contents
+- [About](#about)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Features](#features)
@@ -12,6 +15,19 @@ To get started, just run `./launch.sh`.
 - [Tests](#tests)
 - [License](#license)
 - [Contact](#contact)
+
+## About
+
+This project implements **stochastic interpolants**, a unifying framework connecting deterministic dynamics (flow matching) and stochastic dynamics (diffusion). Stochastic interpolants generalize score-based generative models by separating deterministic transport from stochasticity, allowing precise control over the trade-off between fidelity, diversity, and numerical stability via the diffusion coefficient $\epsilon$.
+
+The main experimental question is: **how much noise $\epsilon$ do we really need?** We explore different interpolant paths $I(t,\cdot,\cdot)$, noise schedules $\gamma(t)$, and diffusion levels $\epsilon$ to understand how $\epsilon$ controls the fidelity vs robustness/diversity trade-off.
+
+**Main file to run:** [`notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py`](https://github.com/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py)
+
+**Colab notebook:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.ipynb)
+
+**Poster:** See [`refs/poster/conference_poster_4.pdf`](refs/poster/conference_poster_4.pdf) for a detailed overview of the project.
+
 ## Installation
 
 To install dependencies using uv, follow these steps:
@@ -79,9 +95,20 @@ To install dependencies using uv, follow these steps:
    ```
 
    - List installed packages:
-   ```bash
-   uv pip list
-   ```
+     ```bash
+     uv pip list
+     ```
+
+## Usage
+
+The main file to run is:
+```bash
+python notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py
+```
+
+Or use the [Colab notebook](https://colab.research.google.com/github/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.ipynb) for an interactive experience.
+
+This script implements stochastic interpolants with different $\epsilon$ values to explore the trade-off between fidelity and diversity in generative modeling.
 
 ## Warning
 
