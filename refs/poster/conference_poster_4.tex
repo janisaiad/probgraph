@@ -1,0 +1,257 @@
+% !TeX program = pdflatex
+\documentclass[landscape,a0paper,fontscale=0.285]{baposter}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage[font=small,labelfont=bf]{caption}
+\usepackage{microtype}
+
+% (optionnel) si tes images sont dans un dossier:
+% \graphicspath{{figures/}}
+
+\newcommand{\compresslist}{
+\setlength{\itemsep}{2pt}
+\setlength{\parskip}{0pt}
+\setlength{\parsep}{0pt}
+}
+
+\definecolor{theme}{rgb}{0.82,0.45,0.32}
+\definecolor{boxbg}{rgb}{0.98,0.95,0.93} % fond clair chaud
+
+
+% Logo robuste : si le fichier n'existe pas, on affiche une boîte.
+\newcommand{\logo}[2][]{%
+  \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+    \fbox{\parbox[c][5em][c]{9em}{\centering\small Missing\\\texttt{#2}}}%
+  }%
+}
+
+\begin{document}
+
+\begin{poster}
+{
+grid=false,colspacing=1em,bgColorOne=white,bgColorTwo=white,
+borderColor=white,textborder=none,headerborder=none,linewidth=0pt,
+headerColorOne=theme,headerColorTwo=theme,headerFontColor=white,boxColorOne=boxbg,
+headershape=rectangle,headerheight=0.10\textheight,headerfont=\large\bfseries
+}{\logo[height=5em]{MVA-logo.png}}%
+{\bfseries \huge How Much Noise Is Enough? Exploring $\epsilon$ in Stochastic Interpolants\\[0.2em]\large Probabilistic Graphical Models --- MVA 2025--2026}%
+{\large Janis Aiad \quad Guillaume Bernard \quad Félix Rosseeuw}%
+{\logo[height=8em]{Untitled-1Artboard-7-1100x731.jpg}}%
+
+%============================================================================
+% Column 0
+%============================================================================
+\headerbox{Introduction}{name=abstract,column=0,row=0}{\small
+Score-based generative models turn noise into data by following a gradient field (Langevin / diffusion).
+\emph{Stochastic interpolants} generalize this idea by separating deterministic transport from stochasticity.
+\textbf{Our experimental question is simple: how much noise $\epsilon$ do we really need?}
+On CelebA, we explore several paths $I(t,\cdot,\cdot)$, $\gamma(t)$ functions, and $\epsilon$ values,
+and show how $\epsilon$ controls the trade-off between \textit{fidelity} (preserving content) and \textit{robustness/diversity} (exploring without collapsing).
+
+}
+
+
+
+\headerbox{DAEs and Score Matching}{name=dae,column=0,below=abstract}{\small
+\textbf{Denoising autoencoders.}
+Given a corrupted data
+\[
+\tilde{x}=x+\varepsilon,\qquad \varepsilon\sim\mathcal N(0,\sigma^2 I),
+\]
+a \textit{DAE} $r_\theta$ is trained by minimizing
+\[
+J_{\mathrm{DAE}_\sigma}(\theta)
+=\mathbb{E}_{q_\sigma(\tilde{x},x)}\!\left[\|x-r_\theta(\tilde{x})\|^2\right].
+\]
+
+\textbf{Score matching.}
+Instead of modeling a density $q(x)$, $s_\theta$ can approximate its \textit{score} $\nabla_x\log q(x)$, but the ideal objective
+\[
+J_{\mathrm{ESM}_q}(\theta)
+=\mathbb{E}_{q(x)}\!\left[\tfrac12\|s_\theta(x)-\nabla_x\log q(x)\|^2\right]
+\]
+is not directly usable because the score of $q$ is unknown.
+
+\textbf{Denoising score matching.}
+Given a Parzen density estimator $q_\sigma$, Vincent [3] introduces \textit{denoising score matching}
+\[
+J_{\mathrm{DSM}_{q_\sigma}}(\theta)
+=\mathbb{E}_{q_\sigma(\tilde{x},x)}\!\left[\tfrac12
+\big\|s_{\theta}(\tilde{x})-\nabla_{\tilde{x}}\log q_\sigma(\tilde{x}\mid x)\big\|^2\right],
+\]
+where the target score $\nabla_{\tilde{x}}\log q_\sigma(\tilde{x}\mid x)$ is shown proportional to $x-\tilde{x}$, the denoising direction.
+Vincent shows that
+\[
+J_{\mathrm{DAE}_\sigma}\;\smile\;J_{\mathrm{DSM}_{q_\sigma}}\;\smile\;J_{\mathrm{ESM}_{q_\sigma}},
+\]
+so training a DAE is (up to constants) equivalent to learning a score field.
+
+\textbf{Implication.}
+Denoising $\approx$ score learning.
+}
+
+
+
+
+\headerbox{Score-Based Generative Modeling}{name=song,column=1,row=0}{\small
+\textbf{Key idea.}
+Instead of learning $q(x)$, learn its score $\nabla_x\log q(x)$.
+This vector field tells, locally, which direction increases probability,
+so it can drive Langevin sampling dynamics from a random initialization to data.
+
+\textbf{Why naive Langevin breaks down.}
+Natural data are often assumed to lie near a low-dimensional manifold embedded in the ambiant space
+(\emph{manifold hypothesis}).
+This creates two fundamental issues for score learning:
+(i) the score $\nabla_x \log q(x)$ is ill-defined off the data support,
+and (ii) standard score matching objectives become inconsistent when the data do not cover the ambient space.
+
+Even when the manifold-related issues are addressed, Langevin dynamics can still struggle in practice. Large low-density regions—where the data provide little to no supervision—make the score unreliable away from the data. And even with a reasonably accurate score, Langevin may still mix slowly: trajectories can linger in low-density areas (Figure 1), and samples can allocate samples in the wrong proportions across modes.
+
+
+\begin{center}
+\includegraphics[width=0.92\linewidth]{langevin_enfin.PNG}
+\captionof{figure}{\small \textbf{Slow mixing.} Even with a good score estimate, Langevin can linger in low-density regions.}
+\end{center}
+
+\textbf{Noise-Conditioned Score Networks.}
+Song \& Ermon address these obstacles by learning scores across different noisy versions of the data distribution. For each noise scale $\sigma$, they consider the distribution $q_\sigma$ obtained by corrupting data with $\mathcal{N}(0,\sigma^2 I)$. This smoothing spreads mass in the ambient space, making the score well-defined and significantly easier to estimate.
+
+They then train a noise-conditional score network $s_\theta(x,\sigma)\approx \nabla_x \log q_\sigma(x)$ using denoising score matching at each noise scale.
+
+At generation time, sampling follows a coarse-to-fine \textit{annealing} schedule over $\sigma$: large noise levels first enable fast global exploration and mode switching, while progressively smaller $\sigma$ values sharpen the sample and guide it back toward the data manifold.
+
+
+}
+
+
+
+
+
+\headerbox{Stochastic Interpolants}{name=si,column=2,row=0}{
+\small \emph{Stochastic interpolants} provide a unifying framework connecting deterministic dynamics (flow matching) and stochastic dynamics (diffusion).
+They describe a random path between two samples $x_0$ and $x_1$ as the sum of a deterministic interpolant and a Gaussian term modulated by a function $\gamma(t)$.
+This formalism explicitly separates geometric transport from randomness and allows precise control over the trade-off between fidelity, diversity, and numerical stability via the diffusion coefficient $\epsilon$.
+
+
+Given two probability density functions $\rho_0, \rho_1 : \mathbb{R}^d \to \mathbb{R}_{\ge 0}$,
+a \emph{stochastic interpolant} between $\rho_0$ and $\rho_1$ is a stochastic process $(x_t)_{t \in [0,1]}$
+defined by
+\begin{equation*}
+x_t = I(t, x_0, x_1) + \gamma(t)\, z,
+\end{equation*}
+where $I \in C^2\!\left([0,1], C^2(\mathbb{R}^d \times \mathbb{R}^d; \mathbb{R}^d)\right)$
+satisfies the boundary conditions ($I(0, x_0, x_1) = x_0$, $I(1, x_0, x_1) = x_1$) and , $\gamma \in C^2([0,1],\mathbb{R^+})$ satisfies $\gamma(0) = \gamma(1) = 0$.
+
+The key points here is that by defining :
+\begin{equation*}
+\begin{aligned}
+b(t,x)
+&= \mathbb{E}\!\left[ \dot{x}_t \mid x_t = x \right]
+= \mathbb{E}\!\left[ \partial_t I(t,x_0,x_1) + \dot{\gamma}(t)\, z \,\middle|\, x_t = x \right] \\
+s(t,x)
+&= \nabla \log \rho(t,x)
+= -\,\gamma(t)^{-1}\,\mathbb{E}\!\left[ z \,\middle|\, x_t = x \right]
+\end{aligned}
+\end{equation*}
+
+then if we denote $\rho(t,x)$ the law of $x_t$, one can show that for any $\varepsilon \in C^0([0,1])$ with $\varepsilon(t) \ge 0$ for all
+$t \in [0,1]$.  
+
+\begin{enumerate}
+\item \textbf{Forward Fokker--Planck equation}
+\begin{equation*}
+\begin{cases}
+\partial_t \rho + \nabla \cdot (b_F \rho) = \varepsilon(t)\, \Delta \rho, \\
+\rho(0,\cdot) = \rho_0,
+\end{cases}
+\end{equation*}
+where the forward drift is defined by
+\begin{equation*}
+b_F(t,x) = b(t,x) + \varepsilon(t)\, s(t,x).
+\end{equation*}
+
+\item \textbf{Backward Fokker--Planck equation}
+\begin{equation*}
+\begin{cases}
+\partial_t \rho + \nabla \cdot (b_B \rho) = -\,\varepsilon(t)\, \Delta \rho, \\
+\rho(1,\cdot) = \rho_1,
+\end{cases}
+\end{equation*}
+where the backward drift is defined by
+\begin{equation*}
+b_B(t,x) = b(t,x) - \varepsilon(t)\, s(t,x).
+\end{equation*}
+\end{enumerate}
+
+It is important to note that $b$ and $s$ can be compute by minimizing an expectation over parameters $x_0,x_1,z_1$. Then by training a model over this least square error, we can use the output as a generative modele :
+}
+
+\headerbox{Stochastic Interpolants (2/2)}{name=si2,column=3,row=0}{
+\small
+
+At any $t \in [0,1]$, the law of the stochastic interpolant $x_t$ coincides with:
+
+\begin{itemize}
+\item \textbf{Probability flow:} $\frac{d}{dt} X_t = b(t,X_t)$, forward from $X_0 \sim \rho_0$ or backward from $X_1 \sim \rho_1$.
+\item \textbf{Forward SDE:} $d X^F_t = b_F(t,X^F_t)\, dt + 2\,\varepsilon(t)\, dW_t$, $X^F_0 \sim \rho_0$.
+\item \textbf{Backward SDE:} $d X^B_t = b_B(t,X^B_t)\, dt + 2\,\varepsilon(t)\, dW^B_t$, $X^B_1 \sim \rho_1$, $W^B_t = - W_{1-t}$, 
+\end{itemize}
+
+Then using the same train $b$ and $s$ we vary $\epsilon$ to generate sample from $\rho_0$ which at the end follow $\rho_1$. A non-zero $\epsilon(t)$ adds stochasticity, increasing sample diversity, stabilizing training, and linking to Schrödinger bridges. However, it may blur details and reduce trajectory fidelity, requiring careful tuning of the noise level.
+
+}
+
+
+
+\headerbox{Experiments}{name=experiments,column=3,row=0,below=si2}{\small
+\textbf{Setup.} CelebA $64{\times}64$, UNet $\approx$10M params. 
+We test interpolants $I(t)$ (linear / trig / enc--dec), noise schedules $\gamma(t)$, and diffusion levels $\epsilon \in \{0,\,0.25,\,0.5\}$ (RK4, 50 steps).
+
+
+
+
+\vspace{0.4em}
+\textbf{Qualitative findings (mask-to-image).}
+\begin{itemize}\setlength{\itemsep}{2pt}
+\item \textbf{Large diffusion hurts fidelity:} $\epsilon=0.5$ increases stochasticity but often induces \emph{global drift} and \emph{over-smoothing} (limited model capacity).
+\item \textbf{Best trade-off at moderate diffusion:} $\epsilon=0.25$ is more stable and preserves identity better, but can still \emph{lose fine details}.
+\item \textbf{Dataset prior shows up with $\epsilon>0$:} stochastic trajectories favor more \emph{plausible} (non-uniform) backgrounds, sometimes reducing strict mask fidelity.
+\item \textbf{Time scheduling matters:} trig schedules refine endpoints (better boundary accuracy) but may \emph{under-explore} mid-time changes.
+\end{itemize}
+
+\begin{center}
+\includegraphics[width=0.6\linewidth]{figures/comparison.png}
+\captionof{figure}{\small \textbf{Effect of $\epsilon$ on mask-to-image reconstructions.}}
+\end{center}
+
+\vspace{0.2em}
+\textbf{Takeaway.} $\epsilon$ controls a practical \emph{fidelity vs robustness/diversity} knob, but the optimal regime is \emph{capacity-dependent}.
+}
+
+
+
+
+
+
+\headerbox{References}{name=refs,column=0,below=dae}{
+\footnotesize
+
+[1] Hyvärinen (2005) Score Matching.   [2] Vincent et al. (2008) Denoising Autoencoders.
+
+[3] Vincent (2011) Connection between score matching and DAEs.    [4] Song \& Ermon (2019) Score-based generative modeling.
+
+[5] Albergo et al. (2023) Stochastic Interpolants.
+
+}
+
+\end{poster}
+\end{document}

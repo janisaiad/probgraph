@@ -1,0 +1,541 @@
+%% SIGGRAPH / ACM Conference Two-Column Template
+%% Compile with: pdflatex, xelatex, or lualatex
+
+\documentclass[sigconf,nonacm]{acmart}
+
+
+\title{Project Report - Denoising Score Matching}
+\subtitle{Probabilistic Graphical Models - MVA 2025-2026}
+
+
+
+\author{Félix Rosseeuw}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{felix.rosseeuw@polytechnique.edu}
+
+\author{Janis Aiad}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{janisaiad.ja@gmail.com}
+
+\author{Guillaume Bernard}
+\affiliation{
+  \institution{}
+  \city{}
+  \country{}
+}
+\email{2000guiber@gmail.com}
+
+% Remove ACM reference information for non-submissions
+\settopmatter{printacmref=false}
+\renewcommand\footnotetextcopyrightpermission[1]{}
+\pagestyle{plain}
+
+\usepackage{graphicx}
+\usepackage{amsmath, amsfonts}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{wrapfig}
+\usepackage{subcaption}
+\usepackage{microtype}
+
+
+
+\begin{document}
+
+
+\maketitle
+
+
+\section{Introduction}
+
+Apprendre à générer des données réalistes revient à apprendre la géométrie d’une distribution de probabilité inconnue à partir d’exemples. Dans le cas des images, par exemple, cela signifie être capable de synthétiser de nouvelles images qui respectent les régularités statistiques des données d’entraînement sans se contenter de les recopier.
+
+Ces dernières années, une idée s’est imposée dans la modélisation générative : plutôt que de paramétriser directement une densité ou d’optimiser un objectif adversarial parfois instable, il est possible d'approximer le score de cette densité. Ce vecteur indique localement dans quelle direction la probabilité augmente, et il suffit pour construire des algorithmes de génération via des dynamiques de type Langevin ou des équations différentielles stochastiques.
+
+Ce rapport étudie différentes manières d’utiliser le débruitage et des dynamiques continues pour construire des modèles génératifs. La section 2 commence par revenir sur le lien théorique mis en évidence par Vincent en 2011 \cite{vincent2011connection} entre le score matching et les autoencodeurs de débruitage. La section 3 explique comment cette intuition a conduit aux modèles génératifs basés sur le score \cite{song2019score}.
+
+
+\section{A Connection between Score Matching and Denoising Autoencoders}
+
+\subsection{Contexte - Les autoencodeurs de débruitage}
+
+Un \textit{autoencodeur} est un réseau de neurones qui apprend à reconstruire un échantillon d'entrée après l'avoir encodé en une représentation de dimension réduite appelée \textit{latente}. 
+
+En limitant la dimension de l'espace contenant ces représentations, on contraint l'autoencodeur à y encoder des informations pertinentes pour la caractérisation des données. En revanche, si l’espace \textit{latent} est d'une dimension trop élevée, l’autoencodeur risque d'apprendre une fonction triviale comme l’identité sans capturer la structure statistique des données.
+
+Pour remédier à ce type de problèmes, Vincent et al. ont introduit en 2008 les autoencodeurs \textit{de débruitage} \cite{vincent2008denoising}. Le principe de ces réseaux consiste en l'ajout de bruit gaussien aux échantillons afin d'en obtenir des versions corrompues. En d'autres termes, pour $x$ dans l'ensemble d'entraînement, on génère
+$$\tilde{x}=x+\varepsilon \mathrm{\ avec\ } \varepsilon\sim \mathcal{N}(0,\sigma^2)$$
+Ensuite, à l'instar du fonctionnement d'un autoencodeur habituel, cet échantillon corrompu $\tilde{x}$ est encodé en une représentation latente, puis cette représentation est décodée en une reconstruction $x^r=\mathrm{decode}(\mathrm{encode}(\tilde{x}))$.
+
+Dans ce cadre, l'\textit{entraînement} un autoencodeur de débruitage correspond à l'optimisation de ses paramètres $\theta$ afin qu'ils minimisent l'erreur quadratique moyenne entre un échantillon $x$ et sa reconstruction $x^r$. En d'autres termes, il s'agit de minimiser la fonction $$J_{DAE_{\sigma}}(\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x},x)}[||x^r-x||^2]$$
+où $q_{\sigma}(\tilde{x},x)=q_{\sigma}(\tilde{x}|x)q_0(x)$ désigne la distribution jointe définie par la loi empirique des données d'entraînement $q_0(x)$ et le processus de corruption gaussien $q_{\sigma}(\tilde{x}|x)$.
+
+En pratique, les autoencodeurs de débruitage se sont révélés particulièrement efficaces pour capturer la structure des données. Ils évitaient effectivement l’apprentissage de solutions triviales et produisaient des représentations plus robustes que les autoencodeurs classiques, mais malgré ce succès empirique, le mécanisme qu’ils apprenaient en reconstruisant les exemples corrompus restait mal compris.
+
+C’est précisément à cette mauvaise compréhension que l’article de Pascal Vincent paru en 2011 \cite{vincent2011connection} vient apporter une réponse. Il met en lumière un lien théorique entre la reconstruction qu'effectue les autoencodeurs de débruitage et l’estimation du score de la distribution des données.
+
+\subsection{Résultat}
+
+Le \textit{score matching} est une technique introduite par Hyvärinen en 2005 \cite{hyvarinen2005score} qui sert à apprendre les paramètres de $p(x;\theta)$, un modèle de densité de probabilité pour lequel la fonction de partition est intractable, c’est-à-dire impossible à calculer de manière exacte ou efficace en pratique. 
+
+Le score matching contourne ce problème en utilisant uniquement le \textit{score} $\nabla_x \log p(x;\theta)$, le gradient de la densité logarithmique par rapport au vecteur des données, qui ne dépend pas de cette fonction de partition.
+
+Le score matching consiste en l'apprentissage des paramètres $\theta$ afin que le score $\nabla_x \log p(x;\theta)$ corresponde le plus possible au score de la distribution $q(x)$ qui régit les données. En d'autres termes, cela consiste en la minimisation de la fonction $$J_{ESM_q}(\theta)=\mathbb{E}_{q(x)}[\frac{1}{2}||\nabla_x \log p(x;\theta)-\nabla_x \log q(x)||^2]$$
+Cette version du score matching dite \textit{explicite} pose toutefois un problème pratique. Le fait que la distribution $q(x)$ soit inconnue empêche d'obtenir des valeurs cibles de $\nabla_x \log q(x)$ nécessaires à cette minimisation. 
+
+Pour pallier à cette limitation, plusieurs variantes dites \textit{implicites} du score matching ont été développées. Ces approches remplacent l’objectif explicite ci-dessus par des critères mathématiquement équivalents mais qui ne nécessitent pas l’accès au score de la distribution cible.
+
+Dans son article de 2011, Vincent propose de modifier l'objectif de score matching explicite en appariant le score $\nabla_x \log p(x;\theta)$ avec celui d'un estimateur de densité de Parzen $q_{\sigma}(\tilde{x})$, une méthode qui sert à approximer la densité de probabilité d’un ensemble de données.
+
+Ce nouvel objectif de score matching explicite s'exprime comme la minimisation de la fonction $$J_{ESM_{q_{\sigma}}}(\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x})}[\frac{1}{2}||\nabla_{\tilde{x}} \log p(\tilde{x};\theta)-\nabla\tilde{x} \log q_{\sigma}(\tilde{x})||^2]$$
+
+Afin de démontrer son résultat, Vincent introduit ensuite un nouvel objectif de score matching dit \textit{score matching de débruitage} qui consiste en la minimisation de la fonction
+$$J_{DSM_{q_{\sigma}}}(\theta)=\mathbb{E}_{q_{\sigma}(\tilde{x})}[\frac{1}{2}||\nabla_{\tilde{x}} \log p(\tilde{x};\theta)-\nabla\tilde{x} \log q_{\sigma}(\tilde{x}|x)||^2]$$
+
+Afin de se représenter intuitivement ce que représente cet objectif, il est utile de remarquer que $\nabla\tilde{x} \log q_{\sigma}(\tilde{x}|x)=\frac{1}{\sigma^2}(x-\tilde{x})$, qui est un mouvement allant de $\tilde{x}$ dans la direction de $x$. Ainsi, le score matching de débruitage contraint le score à ressembler le plus possible à cette direction, et ainsi à se diriger le plus possible vers l'échantillon véritable $x$.
+
+Ce que montre ensuite Vincent, c'est l'équivalence entre les trois problèmes introduits jusqu'alors $$J_{ESM_{q_{\sigma}}}\smile J_{DSM_{q_{\sigma}}}\smile J_{DAE_{\sigma}}$$
+
+Minimiser une de ces fonctions revient à minimiser les autres. En d'autres termes, entraîner un autoencodeur de débruitage équivaut à faire du score matching avec un estimateur de densité de Parzen $q_{\sigma}$.
+
+
+\section{Generative Modeling by Estimating Gradients of the
+Data Distribution}
+
+\subsection{Contexte}
+
+La \textit{modélisation générative} consiste en l'apprentissage d'un modèle capable de générer, à partir d'un ensemble d'exemples tirés d'une distribution $q$, de nouveaux échantillons cohérents avec cette distribution.
+
+Ces exemples peuvent être des images d'un certain genre, par exemple. La modélisation générative consiste alors en la génération de nouvelles images dont l'appartenance au genre des exemples est plausible.
+
+Il existe de nombreux moyens pour réaliser cette tâche. Les \textit{réseaux adversariaux génératifs}, par exemple, sont capables de générer des images de bonne qualité, mais leur entraînement basé sur la réciprocité entre un générateur et un discriminateur se révèle parfois instable, et représente un objectif peu adapté à l'évaluation.
+
+Dans \cite{song2019score}, Song et Ermon introduisent la \textit{modélisation générative basée sur le score}, une méthode qui ne souffre pas des limitations des méthodes l'ayant précédée. Elle consiste en l'approximation du score de la distribution $q$ des exemples donnés, et en l'utilisation de cette approximation pour la génération de nouveaux échantillons.
+
+En effet, comme le score $\nabla_x\log p(x)$ pointe vers des régions de forte densité, en apprendre une approximation permet de comprendre dans quelle direction un échantillon initialisé au hasard dans l'espace ambiant doit se diriger afin de correspondre au mieux à $q$, sans avoir à calculer directement $q$.
+
+Plus concrètement, cette méthode consiste en l'apprentissage d'un \textit{réseau de score} sur l'espace ambiant \[
+\begin{aligned}
+s_\theta : \mathbb{R}^D &\longrightarrow \mathbb{R}^D \\
+x &\longmapsto s_{\theta}(x)
+\end{aligned}
+\] où $s_{\theta}(x)$ approxime $\nabla_x \log q(x)$. 
+
+Une fois appris sur l'espace ambiant, ce réseau $s_{\theta}$ permet de générer de nouveaux échantillons grâce à la \textit{dynamique de Langevin}, une méthode permettant d'échantillonner une distribution en ne se servant que de son score.
+
+Plus précisément, la dynamique de Langevin calcule, pour une taille de pas $\epsilon >0$, $z_t \sim \mathcal{N}(0,I)$ et une distribution de base $\pi$ avec laquelle le premier pas $\tilde{x}_0$ est initialisé, la récursion
+$$\tilde{x}_t=\tilde{x}_{t-1}+\frac{\epsilon}{2}\ \nabla_x\log p(\tilde{x}_{t-1})+ \sqrt{\epsilon}\ z_t$$
+
+Le terme $sqrt{\epsilon}\ z_t$ permet à la dynamique de sortir des régions de faible densité, passer de différents modes à une autre, mais même lorsqu'un mode est atteint, de ne pas se concentrer sur une seule possibilité d'échantillon. Une image illustrant cette dernière propriété est disponible en Figure~\ref{fig:langevin_win}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{langevin_win_real_real.png}
+    \caption{Noise allows creativity. \textmd{Even when the Langevin dynamics came in a high density region, the noise allows the sample to not be only the local minima.}}
+    \label{fig:langevin_win}
+\end{figure}
+
+Ces deux étapes (l'apprentissage d'un réseau de score et l'échantillonnage par dynamique de Langevin) représentent les étapes clés de la modélisation générative basée sur le score. Or, plusieurs problèmes pratiques empêchent leur application.
+
+\subsection{Obstacles}
+
+L'\textit{hypothèse de la variété} postule que les données naturelles (issues d'observations du monde réel) se situent sur une variété (un espace localement euclidien) de dimension strictement inférieure à celle de l'\textit{espace ambiant} (l’espace de représentation dans lequel les observations sont encodées). Bien cette hypothèse ne constitue pas une vérité absolue, elle est largement étayée par des observations empiriques.
+
+Relativement à la méthode introduite par Song et Ermon, cette hypothèse pose deux problèmes pour l'estimation du score. 
+
+Premièrement, comme le score est un gradient pris dans l'espace ambiant $\mathbb{R}^D$, il sera indéfini si le support des données est effectivement une variété de dimension strictement inférieure à $D$.
+
+Deuxièmement, l'apprentissage du réseau de score sera impossible. En effet, l'objectif de score matching nécessaire à cet apprentissage n'est consistant que lorsque le support des données est l'entièreté de l'espace ambiant.
+
+En supposant que ces deux premiers problèmes soient résolus, deux autres problèmes sont causés par les régions de faible densité de données. 
+
+D'abord, une région ne possédant pas suffisamment d'exemples n'aura pas assez d'exemples à présenter à l'objectif de score matching et le score sera mal estimé en son sein.
+
+Ensuite, la dynamique de Langevin peine à trouver des échantillons adéquats lorsque cette dynamique est initialisée dans une région de faible densité, même lorsque le réseau de score est parfaitement estimé. Non seulement la dynamique peut potentiellement mettre beaucoup de temps à sortir d'une telle région (une illustration est disponible en Figure~\ref{fig:langevin_fail}, mais elle peut aussi mal répartir les échantillons entre différents modes de la distribution, en distribuant également à deux modes de densité inégale.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=1\linewidth]{langevin_fail_better.png}
+    \caption{Slow mixing of Langevin Dynamics. \textmd{Even if the score is well-estimated, the sample has trouble going out of the low data density regions.}}
+    \label{fig:langevin_fail}
+\end{figure}
+
+Ces quatre problèmes sont la motivation derrière l'introduction par Song et Ermon des \textit{réseaux de score conditionnés par le bruit}.
+
+\subsection{Solutions}
+
+Les deux premiers problèmes (ceux liés à l'hypothèse de la variété) sont résolus lorsque du bruit est ajouté aux données. En effet, même si ce bruit ajouté est minime (au point d'être imperceptible sur des images, par exemple), cela permet aux données de n'être plus restreintes à une variété strictement sous-dimensionnée, et leur support devient l'espace ambiant entier. Le score est ainsi calculable, et l'objectif de score matching est consistant.
+
+Les deux autres problèmes, eux sont résolus lorsqu'un bruit \textit{conséquent} est ajouté aux données, remplissant ainsi les régions de faible densité. Le score aura plus d’éléments pour s’estimer par score matching, et la dynamique de Langevin pourra explorer plus efficacement l’espace, en évitant de rester bloquée dans des régions de faible densité et en facilitant la traversée entre différents modes de la distribution.
+
+Le problème, c'est que l'ajout d'un bruit conséquent altère la distribution des données. À mesure que le niveau de bruit augmente, la structure fine de la distribution originale est progressivement effacée. Comment conserver à la fois les avantages de l'ajout de bruit et l’information nécessaire à l’estimation de la distribution originale ?
+
+Ce que proposent Song et Ermon, c'est de faire commencer la dynamique de Langevin sur une distribution très bruitée, permettant ainsi d'aller "récupérer" les échantillons initialisés dans les régions initialement de faible densité, puis de réduire progressivement le bruit jusqu'à ce que la distribution bruitée soit indiscernable de la distribution originale. 
+
+Ainsi, en définissant une suite de niveaux de bruit $\{\sigma_i\}_{i=1}^L$ où $\sigma_1$ est suffisamment grand et $\sigma_L$ est suffisamment petit, les quatre problèmes sont effectivement réglés, et il s'agira ainsi d'apprendre un \textit{réseau de score conditionné par le bruit}
+\[
+\begin{aligned}
+s_\theta : \mathbb{R}^D\times \mathbb{R}  &\longrightarrow \mathbb{R}^D \\
+(x,\sigma) &\longmapsto s_{\theta}(x,\sigma)
+\end{aligned}
+\] où pour tout $\sigma\in\{\sigma_i\}_{i=1}^L$, $s_{\theta}(x,\sigma)$ approxime $\nabla_x\log q_\sigma(\tilde{x},x)$.
+
+Pour apprendre un réseau de score conditionné par le bruit, il faudrait en principe minimiser l’objectif de score matching explicite $J_{ESM_q}(\theta)$ introduit plus haut, mais celui-ci est impraticable car le score cible $\nabla_x \log q(x)$ est inconnu. On remplace donc cet objectif par $$\mathcal{J}(\theta;\{\sigma_i\}_{i=1}^L):=\frac{1}{L}\sum_{i=1}^L\lambda(\sigma_i)J_{DSM_{q_{\sigma}}}(\theta)$$
+où $J_{DSM_{q_{\sigma}}}(x,\theta)$ est l'objectif de score matching de débruitage introduit par Pascal Vincent, et $\lambda$ est une fonction de coefficient strictement positive.
+
+
+
+
+
+
+
+
+% When learning a denoiser ηz, we found it beneficial to complete the image generation
+% with a final denoising step, in which we set ϵ = 0 and switch the integrator to the one given
+% in (5.14)
+
+
+
+
+
+
+
+
+% j'ai eu boffi en seminaire qui m'a dit que choisir le epsilon optimal est important selon les classes de problemes (il m'avait parlé d'une startup qui utilise ça avec des protéines), on peut se permettre de diminuer grandement le nombre de pas et améliorer l'efficacité at the edge of the stabiility ! 
+
+
+
+
+
+
+
+\section{Pourquoi ajouter de la stochasticité ?}
+
+La dynamique de Langevin introduite ci-dessus fournit ainsi une première méthode conceptuellement simple pour transformer une estimation du score en un mécanisme de génération. Toutefois, cette formulation reste essentiellement discrète et locale : elle procède par une succession de petites corrections bruitées, dont la stabilité, la vitesse de convergence et la qualité d’échantillonnage dépendent fortement du choix du pas $\epsilon$ et du niveau de bruit.
+
+Une observation clé est que cette récursion peut être interprétée comme une discrétisation d’une dynamique continue sous-jacente. En passant à la limite $\epsilon \to 0$, la génération par Langevin s’inscrit naturellement dans le cadre des équations différentielles stochastiques, où l’évolution d’un échantillon est gouvernée par un champ de dérive — directement lié au score — et un terme de diffusion contrôlant l’exploration de l’espace.
+
+Ce point de vue continu ouvre la voie à une compréhension unifiée des modèles génératifs basés sur le score. Selon que l’on conserve ou non le terme stochastique, la dynamique résultante peut être vue soit comme une EDS de diffusion, soit comme une équation différentielle ordinaire déterministe décrivant un flot de probabilité. C’est précisément dans ce cadre que s’inscrivent les modèles de diffusion modernes, mais aussi les approches plus récentes de \emph{flow matching}, qui apprennent directement le champ de vitesse associé à ce flot.
+
+\subsection{Le score matching a bien fait de l'ajouter : biais inductif naturel}
+
+Passer de \emph{flow matching} à des modèles de diffusion n'est pas une généralisation hasardeuse. Mapper une distribution vers une autre via une dynamique déterministe, sans terme de bruit, relève du \emph{flow matching}. Le calcul stochastique montre que ce cadre déterministe est en réalité inclus dans une classe bien plus large de dynamiques probabilistes, décrites par des équations différentielles stochastiques (EDS). Dans cette classe, on transforme un problème de sampling purement ODE déterministe en un problème de type MCMC (par exemple de type Langevin), où la diffusion vient compléter le drift appris.
+
+L'ajout de stochasticité rend en particulier la transformation \emph{image $\leftrightarrow$ gaussienne} beaucoup plus naturelle : du point de vue du transport optimal, l'ajout de bruit gaussien est une généralisation cohérente pour relier une distribution complexe à une base simple (gaussienne). C'est précisément ce que font les modèles de diffusion et, auparavant, le denoising score matching.
+
+Un autre point fondamental est que, en écrivant l'équation backward associée à une EDS, on peut estimer le transport \emph{gaussienne $\rightarrow$ image} sans jamais expliciter toutes les distributions intermédiaires $p_\theta(t, x)$ : on apprend directement le \emph{score} $\nabla_x \log p_\theta(t, x)$, ce qui évite de paramétriser la densité elle‑même. L'usage du score, plutôt qu'une paramétrisation explicite de la densité (par exemple une mixture de gaussiennes), n'est donc pas un simple artefact d'analyse numérique permettant de compresser les queues de la distribution : c'est bien le score qui est la quantité minimale suffisante pour sampler une image dans ces modèles.
+
+\subsection{Régularisation et équations de transport}
+
+Apporter de la stochasticité a aussi un effet très désirable : une régularisation implicite de la qualité des échantillons. Un \emph{flow matching} mal appris peut transformer une image en une version où les détails fins sont dégradés ou déformés, sans mécanisme explicite pour corriger ces erreurs locales. À l'inverse, dans un modèle de diffusion, le \emph{débruitage successif} constitue le biais inductif central : ce que le modèle fait de mieux, conceptuellement, est de transformer une entrée bruitée en une version moins bruitée. L'image finale a donc, par construction, tendance à être moins bruitée et plus régulière, car chaque pas de la dynamique backward est un pas de débruitage.
+
+Ce phénomène s'explique bien en écrivant les équations de transport associées. D'un côté, on a une équation de transport pure (équation de continuité) pour le \emph{flow matching}, sans terme de diffusion. De l'autre, on a l'équation de Fokker–Planck associée à l'EDS, qui contient un terme de type équation de la chaleur. En avant dans le temps, l'équation de la chaleur
+\[
+\partial_t \rho(t, x) = \epsilon \Delta \rho(t, x)
+\]
+rend naturellement les distributions plus lisses : les pics se dissipent et la masse se répartit. En inversant la flèche du temps, l'équation backward correspondante a au contraire tendance à créer des pics dans la distribution. Ce biais inductif de l'équation de la chaleur (régularisation forward, “sharpening” backward) est au cœur de la différence entre dynamiques déterministes et stochastiques, et explique en partie pourquoi les modèles de diffusion produisent des échantillons visuellement plus réguliers qu'un flow matching naïf.
+
+Historiquement, ce chemin conceptuel — du score matching de Hyvärinen, aux denoising autoencoders de Vincent, puis aux modèles de diffusion de Song et Ermon et enfin aux interpolants stochastiques d'Albergo et al. — a été progressif, de 2015 à 2022, en affinant à chaque étape le rôle du bruit gaussien et du score dans la modélisation générative.
+
+\subsection{Limites du flow matching pur}
+
+Du point de vue des équations de transport, Albergo et al. montrent que, pour une équation de transport pure (sans terme diffusif), le simple fait d'approximer correctement le champ de vitesse $b$ ne suffit pas à contrôler la divergence de Kullback–Leibler entre la solution vraie et la solution approchée. De manière plus précise, ils écrivent (Lemma~21 dans~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{Lemma~21 shows that it is insufficient in general to match $\hat b$ with $b$ to obtain control on the $\mathsf{KL}$ divergence. The essence of the problem is that a small error in $\hat b - b$ does not ensure control on the Fisher divergence $\mathrm{FI}(\rho(t)\,\|\,\hat\rho(t)) = \int_{\mathbb{R}^d}\|\nabla\log\rho(t,x) - \nabla\log\hat \rho(t,x)\|^2\rho(t,x)\,dx$, which is necessary due to the presence of $(\nabla\log\hat\rho - \nabla\log\rho)$ in the expression of the $\mathsf{KL}$ divergence.}
+\end{quote}
+
+Autrement dit, faire “juste du flow matching” sur $b$ ne donne pas de contrôle suffisant sur la qualité statistique globale du modèle : il manque un contrôle explicite sur le score de la densité. C'est précisément ce manque que viennent combler les termes de diffusion et les objectifs quadratiques sur le score dans le cadre des stochastic interpolants.
+
+\section{Ce qu'apportent les stochastic interpolants}
+
+\subsection{Au‑delà du couplage gaussienne–image}
+
+Pour de nombreuses tâches d'apprentissage machine n'étant pas purement génératives, l'objectif n'est pas de passer d'une gaussienne à une image, mais plutôt d'une image à une autre. C'est le cas par exemple lorsqu'il s'agit de faire du \textit{color inpainting} ou de modifier le style d'une image. Historiquement, ces problèmes ont souvent été modélisés comme des problèmes de \textit{transport optimal} dans un espace approprié (l'espace colorimétrique, par exemple), fournissant ainsi un cadre mathématique rigoureux.
+
+Cependant, le coût computationnel du transport optimal discret devient rapidement impraticable sur de grandes images. Pour une image de 
+$1024\times1024$ pixels, le plan de transport comporte en effet de l’ordre de $10^{12}$ coefficients, ce qui le rend intractable en pratique.
+
+Les interpolants stochastiques contournent cette difficulté en apprenant directement, de façon paramétrique, une dynamique de transport entre deux distributions, sans jamais construire explicitement un plan de transport. L’objectif n’est plus d’imposer un passage systématique par une gaussienne (image $\rightarrow$ gaussienne $\rightarrow$ image), mais de définir un chemin aléatoire reliant deux échantillons $x_0$ et $x_1$ via un interpolant
+\[
+x_t = I(t, x_0, x_1) + \gamma(t)\,z,
+\]
+où $x_0$ et $x_1$ sont deux échantillons tirés des distributions de départ et d'arrivée, $I(t,x_0,x_1)$ est un interpolant déterministe reliant $x_0$ à $x_1$, $z$ est un bruit gaussien et $\gamma(t)$ est une fonction qui règle l'amplitude du bruit au cours du temps, avec typiquement $\gamma(0)=\gamma(1)=0$ pour préserver les conditions aux bords.
+
+Dans ce cadre, le flow matching constitue une première approche naturelle : on apprend un champ de vitesse $b(t,x)$ dont l’intégration transporte les états $x_t$ le long de l’interpolant. Toutefois, pour des tâches telles que la correction colorimétrique ou l’édition locale, il ne suffit pas de rapprocher deux distributions « en moyenne » : il faut préserver avec précision la structure géométrique de l’image (contours, détails fins et organisation des parties, par exemple). Or, une dynamique entièrement déterministe peut se révéler fragile : la moindre erreur dans le champ de vitesse peut s’accumuler au fil de l’intégration et se traduire par des déformations locales, autrement dit un « froissement » de la géométrie.
+
+De plus, le biais inductif d’une équation de transport pure (sans diffusion) est essentiellement directionnel : il est surtout pertinent dans un sens donné, par exemple lorsqu’il s’agit de lisser certaines structures. Or, en color inpainting, on doit contrôler finement la transformation dans les deux sens. Cette exigence est difficile à concilier avec une simple équation de la chaleur, dont la diffusion favorise intrinsèquement la régularisation.
+
+Albergo et al. soulignent un point subtil mais important : même lorsque différentes formulations (ODE dite \emph{probability flow}, EDS forward et EDS backward) induisent le même chemin de densités $\rho(t)$, elles ne sont pas équivalentes du point de vue de l'échantillonnage. En particulier, comme elles définissent des processus de trajectoires différents, elles n’ont pas les mêmes propriétés numériques et ne propagent pas les erreurs d’approximation de la même manière (Remarque~20 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+    [...] \textit{the fact that these processes are different has implications for the accuracy of the numerical integration used to sample from them at any t as well as for the propagation of statistical errors} [...]
+\end{quote}
+
+En pratique, le choix ODE vs EDS (et le niveau de bruit) affecte donc la stabilité de l’intégration, la robustesse aux erreurs et le compromis biais-variance du générateur.
+
+\subsection{Le rôle crucial du latent gaussien et du bruit}
+
+Un apport central des stochastic interpolants est de proposer une interprétation unifiée des dynamiques déterministes et stochastiques. Le terme diffusif observé au niveau des densités, sous la forme d’une équation de la chaleur, provient d’une équation différentielle stochastique agissant au niveau des trajectoires. Cette dynamique stochastique peut être interprétée comme la superposition d’un transport déterministe et d’un \emph{Brownian bridge}, c’est-à-dire d’un processus gaussien contraint à s’annuler aux bornes.
+
+Plus précisément, en posant l’ansatz
+\[
+x_t = I(t,x_0,x_1) + N_t,
+\]
+où $I(t,x_0,x_1)$ est un interpolant déterministe reliant $x_0$ à $x_1$, et $(N_t)_{t\in[0,1]}$ un processus gaussien centré tel que $N_0 = N_1 = 0$, on sépare explicitement la géométrie du transport de la stochasticité. L’interpolant $I$ peut être appris via un champ de vitesse $b(t,x)$ de type \emph{flow matching}, tandis que l’amplitude du bruit est contrôlée par un paramètre de diffusion $\epsilon$ dans l’EDS associée.
+
+Ce cadre permet d’apprendre conjointement un champ de vitesse $b$ et un score $s$, tout en dissociant l’apprentissage du choix du niveau de stochasticité utilisé lors du sampling. En particulier, l’inférence peut être réalisée a posteriori pour différentes valeurs de $\epsilon$, en fonction de la tâche considérée et du compromis souhaité entre stabilité numérique, diversité et fidélité des échantillons. Cette séparation explicite entre structure déterministe et bruit constitue l’un des avantages clés des stochastic interpolants.
+
+
+Les auteurs soulignent également le rôle du latent gaussien $\gamma(t) z$ pour la régularité spatiale de $b$ et $s$. Ils écrivent (Remark~11 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{If we set $\gamma(t) = 0$ in $x_t$ (i.e., if we remove the latent variable), the stochastic interpolant (2.1) reduces to the one originally considered in Albergo and Vanden-Eijnden (2023). In this setup, the results above formally stand except that we cannot guarantee the spatial regularity of $b_{\mathrm{ODE}}(t,x)$ and $s(t,x)$, since it relies on the presence of the latent variable (as shown in the proof of Theorem~6). Hence, we expect the introduction of the latent variable $\gamma(t) z$ to help for generative modeling, where the solution to the corresponding ODEs/SDEs will be better behaved, and for statistical approximation, since the targets $b$ and $s$ will be more regular. We will see in Section~6 that it also gives us much greater flexibility in the way we can bridge $\rho_0$ and $\rho_1$, which will enable us to design generative models with appealing properties.}
+\end{quote}
+
+Il y a donc un compromis clair entre :
+
+\begin{itemize}
+    \item une écriture “compressée” de type flow matching pur, où l'on apprend directement un champ $b$ reliant $x_0$ et $x_1$ (peu de bruit, mais plus sensible aux erreurs locales et à la discrétisation) ;
+    \item et l'écriture très détaillée des modèles de diffusion, qui offrent un contrôle très fin sur le score, mais sont historiquement formulés pour un chemin \emph{gaussienne $\leftrightarrow$ données}.
+\end{itemize}
+
+L'idée des stochastic interpolants est de proposer un compromis : au lieu de faire \emph{image $\to$ gaussienne $\to$ image}, on fait \emph{image$_1$ $\to$ “un peu gaussienne” $\to$ image$_2$}, en introduisant explicitement une troisième distribution intermédiaire contrôlée par $\gamma(t)$ et par la diffusion. On récupère ainsi le meilleur des deux mondes : une écriture relativement compressée (un interpolant $I$ et un seul latent gaussien) et la capacité de faire du sampling très précis sur les détails, comme dans un diffusion model.
+
+Albergo et al. insistent enfin sur le fait que les équations de Fokker–Planck forward/backward sont plus robustes que la simple équation de transport vis‑à‑vis des erreurs d'approximation sur $b$ et $s$. Ils écrivent (Remark~12 de~\cite{albergo2023stochastic}) :
+
+\begin{quote}
+\emph{We will see in Section~2.4 that the forward and backward FPE in (2.20) and (2.22) are more robust than the TE in (2.9) against approximation errors in the velocity $b$ and the score $s$, which has practical implications for generative models based on these equations.}
+\end{quote}
+
+\subsection{Choix de $\epsilon$ et perspectives expérimentales}
+
+Dans le cadre des stochastic interpolants, on apprend en pratique un champ de vitesse $\hat b$ et un score $\hat s$, mais l'inférence peut ensuite être réalisée à un niveau de bruit $\epsilon$ arbitraire. Le choix de $\epsilon$ optimal n'est toutefois pas trivial. Les auteurs dérivent une borne supérieure sur la divergence de Kullback–Leibler qui conduit à un choix optimal théorique
+\[
+\epsilon^* = \left(\frac{\mathcal{L}_b[\hat b] - \min_{\hat b}\mathcal{L}_b[\hat b]}{\mathcal{L}_s[\hat s] - \min_{\hat s}\mathcal{L}_s[\hat s]}\right)^{1/2},
+\]
+mais en pratique les minima inconnus rendent cette formule difficile à utiliser directement.
+
+Dans la suite de notre travail, nous proposerons donc des expériences empiriques pour explorer ce choix de $\epsilon$ en fonction de la tâche (génération, colorimétrie, inpainting, etc.), en particulier pour voir dans quelle mesure il est possible de réduire drastiquement le nombre de pas d'intégration tout en restant “au bord” de la stabilité numérique.
+
+\section{Expériences}
+
+Lors d'un séminaire auqel Janis Aiad a participé, Boffi a notamment souligné que le choix de $\epsilon$ optimal dépend fortement de la classe de problèmes considérée (par exemple en biologie structurale, pour des tâches de modélisation de protéines). En pratique, ajuster $\epsilon$ permet de diminuer significativement le nombre de pas d'intégration nécessaires et d'améliorer l'efficacité du sampling, tout en contrôlant la stabilité numérique.
+
+Dans nos expériences, nous étudierons systématiquement :
+
+\begin{itemize}
+    \item l'effet de $\epsilon$ sur la qualité des échantillons ;
+    \item le compromis entre robustesse (régime SDE avec $\epsilon>0$) et fidélité géométrique (régime ODE/flow matching avec $\epsilon \approx 0$) ;
+    \item la possibilité d'adapter $\epsilon$ pour que l'image entière soit moins touchée par le desmaquage local).
+\end{itemize}
+
+
+
+\begin{table}[h!]
+\centering
+\caption{Hyperparamètres d'entraînement}
+\label{tab:hyperparameters}
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparamètre} & \textbf{Valeur} \\
+\midrule
+\multicolumn{2}{l}{\textit{Hyperparamètres principaux}} \\
+\midrule
+Learning rate de base (\texttt{base\_lr}) & $10^{-4}$ \\
+Taille du batch (\texttt{batch\_size}) & $128$ \\
+Nombre d'époques (\texttt{n\_epochs}) & $5000$ \\
+Taille des patches (\texttt{patch\_size}) & $6 \times 6$ \\
+Nombre de patches par image (\texttt{num\_patches}) & $4$ \\
+Fréquence de logging (\texttt{metrics\_freq}) & tous les $100$ epochs \\
+Fréquence de sauvegarde (\texttt{plot\_freq}) & tous les $500$ epochs \\
+\midrule
+\multicolumn{2}{l}{\textit{Architecture du réseau}} \\
+\midrule
+Canaux d'entrée (\texttt{in\_channels}) & $3$ (RGB) \\
+Canaux de sortie (\texttt{out\_channels}) & $3$ (RGB) \\
+Canaux de base (\texttt{base\_channels}) & $64$ \\
+Dimension temporelle (\texttt{time\_dim}) & $256$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Optimiseur}} \\
+\midrule
+Type d'optimiseur & Adam \\
+Learning rate initial & $10^{-4}$ \\
+Scheduler & CosineAnnealingLR \\
+Période du scheduler (\texttt{T\_max}) & $5000$ \\
+Learning rate minimal (\texttt{eta\_min}) & $10^{-6}$ \\
+Clipping de gradient & désactivé ($\infty$) \\
+\midrule
+\multicolumn{2}{l}{\textit{Dataset et images}} \\
+\midrule
+Dataset & CelebA (train split) \\
+Résolution des images (\texttt{image\_size}) & $64 \times 64$ \\
+Nombre de canaux & $3$ (RGB) \\
+\midrule
+\multicolumn{2}{l}{\textit{Interpolant stochastique}} \\
+\midrule
+Chemins testés (\texttt{paths}) & linear, trig, encoding-decoding \\
+Types de gamma (\texttt{gamma\_types}) & bsquared, sinesquared, sigmoid \\
+Valeurs d'epsilon & $0.5$ (eps-0.5), $0.25$ (eps-0.25) \\
+\midrule
+\multicolumn{2}{l}{\textit{Probabilité flow}} \\
+\midrule
+Nombre de pas (\texttt{n\_step}) & $50$ \\
+Méthode d'intégration & Runge-Kutta 4 (rk4) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}[h!]
+\centering
+\caption{Types de fonctions gamma $\gamma(t)$ pour l'interpolant stochastique}
+\label{tab:gamma_types}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Type} & \textbf{$\gamma(t)$} & \textbf{Maximum} & \textbf{$C^1$ en $t=0,1$} \\
+\midrule
+\texttt{brownian} & $\sqrt{a t(1-t)}$ & $\frac{\sqrt{a}}{2}$ à $t=0.5$ & Non \\
+\texttt{bsquared} & $t(1-t)$ & $0.25$ à $t=0.5$ & Oui \\
+\texttt{sinesquared} & $\sin^2(\pi t)$ & $1.0$ à $t=0.5$ & Oui \\
+\texttt{sigmoid} & $\hat{\sigma}(t)$ & Variable (dépend de $f$) & Oui \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5cm}
+
+\begin{minipage}{\textwidth}
+\small
+\textbf{Notes:}
+\begin{itemize}
+    \item Pour \texttt{brownian}: $a > 0$ est un paramètre d'échelle. Ce choix correspond à un pont brownien $N_t = W_t - t W_1$ dans la formulation équivalente $x_t = I(t,x_0,x_1) + N_t$.
+    \item Pour \texttt{bsquared}: fonction quadratique (parabole) avec $\gamma(0) = \gamma(1) = 0$ et maximum au centre.
+    \item Pour \texttt{sinesquared}: fonction périodique avec amplitude maximale à $t=0.5$.
+    \item Pour \texttt{sigmoid}: $\hat{\sigma}(t) = \sigma(f(t - \tfrac{1}{2}) + 1) - \sigma(f(t - \tfrac{1}{2}) - 1) - \sigma(-\tfrac{f}{2}+1) + \sigma(-\tfrac{f}{2}-1)$ où $\sigma(t) = e^t/(1+e^t)$ est la fonction sigmoïde et $f$ est un facteur d'échelle (typiquement $f=10$). Cette fonction est compacte et différentiable.
+\end{itemize}
+\end{minipage}
+\end{table}
+
+10M parametres Unet,
+
+
+(123)
+deja tous les visages sont gardés c'est à dire que les visages ne sont pas détruits mais l'image au pire est détruite et terne autour
+
+3 premieres images epsilon 0.5 un peu trop grand, toute l'image est modifiée et un peu terne c'est pas bon
+ça veut dire qu'avec notre budget en parametres n'est pas suffisant pour gérer toutes les trajectoires qui divergent des trajectoires déterministes de flow matching.
+Conclusion dans ce cas là il aurait fallu plus de parametres
+
+(456)
+epsilon 0.25 terne, des details sont perdus sur l'image 4 
+pour l'image 4 la reconstruction e 2 à 3 x meilleures que 5 6 
+0.25 fait mieux que none en linear- bsquared
+
+
+(789)
+l'image 7 a recrée des détails au dessus du visage, la 8 aussi, surement du au modèle qui veut crée une image plausible sans se soucier du demaskage, les trajectoires se dispersent sur une manifold plus plausible et plus grande (les images de tete avec un fond blanc sont dur à obtenir, il y en a beaucoup moins que les images avec un fond bruité), donc en stochastique diffusion on a beaucoup plus de proba d'avoir un fond pas uniforme
+
+c'est coherent car pour 0.5 on a encore plus de bruit de fond c'est super 
+
+
+(101112)
+10 11 rendent le fond encore plus uni mais on démaske mal,
+mais la 12 est + bruitée, 
+
+on peut pas l'expliquer par epsilon 
+l'ombre à gauche de la tete de la meuf est prononcée donc le constraste est légérement modifié ce qui se voit un peu sur le bruit
+
+on ne saurait pas l'expliquer à l'heure actuelle
+
+
+
+
+13-14-15-16
+trig scheduling (1-cos(k/n)) pour avoir plus de points proche de 0 et proche de 1 pour le précision, cependant on a pas assez de points au milieu pour avoir des variations suffisantes de l'image, donc on garde en fidélité sur l'image initiale qui est l'image masquée,
+
+
+
+
+
+
+\paragraph{Remarks extracted from the paper.}
+We remarked in Section 6.1 that learning the denoiser $\eta_z$ is more numerically stable than learning the score $s$ directly. Our results suggest that learning the denoiser is best practice.
+
+The factor of $\alpha(t)^{-1}$ in the final term of the SDE could pose numerical problems at $t = 1$, as $\alpha(1) = 0$. As discussed in the paragraph above, a choice of $\epsilon(t)$ which is such that $\epsilon(t)/\alpha(t) \to C$ for some constant $C$ as $t \to 1$ avoids any issue.
+
+Their diversity increases as we increase the diffusion coefficient $\epsilon$.
+
+Moreover, we find that learning $b$ generically performs better than learning $v$, and that learning $\eta$ generically performs better than learning $s$ (except when $\epsilon$ is taken large enough that performance starts to degrade).
+
+Taken together with Figure 9, these results demonstrate qualitatively that small values of $\epsilon$ tend to over-estimate the density within the modes and under-estimate the density in the tails. Conversely, when $\epsilon$ is taken too large, the model tends to under-estimate the modes and over-estimate the tails.
+
+
+
+Later, inSection5.1,wediscusshowtorecastscore-baseddiffusion
+models(SBDM)as linearone-sidedinterpolants,
+
+
+
+, we highlight that there is a much broader space of possible
+designs that may be relevant for future applications. Several candidate application domains
+include the solution of inverse problems such as image inpainting and super-resolution,
+spatiotemporal forecasting of dynamical systems, and scientific problems such as sampling
+of molecular configurations and machine learning-assisted Markov chain Monte-Carlo
+
+
+
+Theorem (41) gives a practical route towards solving
+the Schr¨odinger bridge problem with stochastic interpolants, and we leave the numerical
+investigation of this formulation to future work.
+
+
+
+Figure 5: The effect of ϵ on sample trajectories
+
+
+tester la variabilité des 3 : linear 1−t t at(1−t)
+trig cosπ
+2t sinπ
+2t at(1−t)
+enc-dec cos2(πt)1[0,1
+2)(t) cos2(πt)1(1
+2,1](t) sin2(πt
+
+
+By contrast, the diffusion coefficient ϵ(t) leaves the density ρ(t) unchanged, and only
+affects the way we sample it.
+
+In particular, the probability flow ODE (2.32) results in a
+map that pushes every Xt=0 = x0 onto a single Xt=1 = x1 and vice-versa. The forward
+SDE (2.33) maps each XF
+t=0 = x0 onto an ensemble XF
+t=1 whose spread is controlled by the
+amplitude of ϵ(t) (and similarly for the reversed SDE (2.34) that maps each XB
+t=1 = x1
+onto an ensemble XB
+t=0).
+
+As ϵ increases but γ stays the same, the density
+ρ(t) is unchanged, but the individual trajectories become increasingly stochastic. While
+all choices are equivalent with exact b and s, Theorem 23 shows that nonzero values of ϵ
+provide control on the likelihood in terms of the error in b and s when they are approximate.
+
+(on va faire des experiences sur cet epsilon optimal pour montrer direct combien de sous ça fait gagner)
+(personnaly trigonometric son figure 5 appears more appealing trigonometric
+)
+
+
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+
+\end{document}
