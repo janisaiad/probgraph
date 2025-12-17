@@ -4,6 +4,7 @@
 
 To get started, just run `./launch.sh`.
 
+**Implementation details:** This project is built on top of the [`interflow`](https://github.com/malbergo/stochastic-interpolants) module from the [stochastic-interpolants repository](https://github.com/malbergo/stochastic-interpolants) by Albergo et al. We cloned the core `interflow` implementation and built our experimental framework around it, including custom interpolants, noise schedules, and extensive experiments on CelebA. This work represents approximately **40 hours of development and experimentation** to achieve the reported results.
 
 
 ## Table of Contents
@@ -21,6 +22,7 @@ To get started, just run `./launch.sh`.
 This project implements **stochastic interpolants**, a unifying framework connecting deterministic dynamics (flow matching) and stochastic dynamics (diffusion). Stochastic interpolants generalize score-based generative models by separating deterministic transport from stochasticity, allowing precise control over the trade-off between fidelity, diversity, and numerical stability via the diffusion coefficient $\epsilon$.
 
 The main experimental question is: **how much noise $\epsilon$ do we really need?** We explore different interpolant paths $I(t,\cdot,\cdot)$, noise schedules $\gamma(t)$, and diffusion levels $\epsilon$ to understand how $\epsilon$ controls the fidelity vs robustness/diversity trade-off.
+
 
 **Main file to run:** [`notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py`](https://github.com/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py)
 
