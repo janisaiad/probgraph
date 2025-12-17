@@ -24,7 +24,6 @@ The main experimental question is: **how much noise $\epsilon$ do we really need
 
 **Main file to run:** [`notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py`](https://github.com/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py)
 
-**Colab notebook:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.ipynb)
 
 **Poster:** See [`refs/poster/conference_poster_4.pdf`](refs/poster/conference_poster_4.pdf) for a detailed overview of the project.
 
