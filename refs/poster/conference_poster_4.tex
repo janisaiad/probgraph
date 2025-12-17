@@ -100,7 +100,6 @@ Denoising $\approx$ score learning.
 
 
 
-
 \headerbox{Score-Based Generative Modeling}{name=song,column=1,row=0}{\small
 \textbf{Key idea.}
 Instead of learning $q(x)$, learn its score $\nabla_x\log q(x)$.
@@ -118,16 +117,15 @@ Even when the manifold-related issues are addressed, Langevin dynamics can still
 
 
 \begin{center}
-\includegraphics[width=0.92\linewidth]{langevin_enfin.PNG}
-\captionof{figure}{\small \textbf{Slow mixing.} Even with a good score estimate, Langevin can linger in low-density regions.}
+  \includegraphics[width=0.92\linewidth]{langevin_enfin.PNG}
+  \captionof{\textbf{Figure 1 :} }{\small \textbf{Slow mixing.} Even with a good score estimate, Langevin can linger in low-density regions.}
 \end{center}
-
+  
 \textbf{Noise-Conditioned Score Networks.}
-Song \& Ermon address these obstacles by learning scores across different noisy versions of the data distribution. For each noise scale $\sigma$, they consider the distribution $q_\sigma$ obtained by corrupting data with $\mathcal{N}(0,\sigma^2 I)$. This smoothing spreads mass in the ambient space, making the score well-defined and significantly easier to estimate.
+Song \& Ermon address these obstacles by learning scores fields foracross different noisy versions of the data distribution. For each noise scale $\sigma$, they consider the distribution $q_\sigma$ obtained by corrupting data with $\mathcal{N}(0,\sigma^2 I)$. This smoothing spreads mass in the ambient space, making the score well-defined and significantly easier to estimate.
+  
+Concretely, they train a noise-conditional score network $s_\theta(x,\sigma)\approx \nabla_x \log q_\sigma(x)$ using denoising score matching at each noise scale.
 
-They then train a noise-conditional score network $s_\theta(x,\sigma)\approx \nabla_x \log q_\sigma(x)$ using denoising score matching at each noise scale.
-
-At generation time, sampling follows a coarse-to-fine \textit{annealing} schedule over $\sigma$: large noise levels first enable fast global exploration and mode switching, while progressively smaller $\sigma$ values sharpen the sample and guide it back toward the data manifold.
 
 
 }
