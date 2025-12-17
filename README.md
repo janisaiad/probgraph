@@ -22,9 +22,8 @@ This project implements **stochastic interpolants**, a unifying framework connec
 
 The main experimental question is: **how much noise $\epsilon$ do we really need?** We explore different interpolant paths $I(t,\cdot,\cdot)$, noise schedules $\gamma(t)$, and diffusion levels $\epsilon$ to understand how $\epsilon$ controls the fidelity vs robustness/diversity trade-off.
 
-**Main file to run:** [`notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py`](https://github.com/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py)
+**Main file to run:** [`notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py`](https://github.com/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants.py)
 
-**Colab notebook:** [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.ipynb)
 
 **Poster:** See [`refs/poster/conference_poster_4.pdf`](refs/poster/conference_poster_4.pdf) for a detailed overview of the project.
 
@@ -103,7 +102,7 @@ To install dependencies using uv, follow these steps:
 
 The main file to run is:
 ```bash
-python notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.py
+python notebooks/cifar/cifar10lsun_patched_interpolants.py
 ```
 
 Or use the [Colab notebook](https://colab.research.google.com/github/janisaiad/probgraph/blob/master/notebooks/cifar/cifar10lsun_patched_interpolants_epsilon.ipynb) for an interactive experience.

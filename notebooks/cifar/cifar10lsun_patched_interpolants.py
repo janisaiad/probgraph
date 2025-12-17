@@ -10,62 +10,14 @@ import time
 import sys
 import os
 sys.path.append('../../')
-from typing import Tuple, Any, Optional
-
-import builtins
-import logging
-from datetime import datetime
+from typing import Tuple, Any
 
 import interflow as itf
 import interflow.stochastic_interpolant as stochastic_interpolant
 
-RESULTS_ROOT = os.path.join("vresults", "cifarpatchedinterpolants")  # we store root for saved results
-DATASET_NAME = "cifar10_dog"  # we tag runs by dataset
-EPSILON_TAG = "eps-none"  # we mark epsilon inference variant (none by default)
-EPSILON_CONFIGS = [
-    (0.5, "eps-0.5"),
-    (0.25, "eps-0.25"),
-]  # we sweep epsilon diffusion coefficients
-NUM_CHANNELS = 3  # we set the number of image channels
-IMAGE_SIZE = (64, 64)  # we set the target spatial resolution for inputs
-IMAGE_HEIGHT, IMAGE_WIDTH = IMAGE_SIZE  # we unpack height and width
-
-LOG_ROOT = os.path.join("logs")  # we log classifier events to files
-os.makedirs(LOG_ROOT, exist_ok=True)  # ensure logs directory exists
-logger = logging.getLogger("probgraph")  # we centralize logging
-logger.setLevel(logging.INFO)  # we log info and above
-logger.propagate = False  # we only use our handlers
-logger.handlers = []  # start with fresh handler list
-latest_handler = logging.FileHandler(os.path.join(LOG_ROOT, "latest.log"))  # we keep a rolling summary
-latest_handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))  # timestamp entries
-logger.addHandler(latest_handler)  # we always log to latest
-current_run_handler = None  # we will replace this for each run
-_original_print = builtins.print  # store builtin print
-
-def print(*args, **kwargs):
-    """we log every printed statement before emitting to stdout"""
-    sep = kwargs.get("sep", " ")
-    msg = sep.join(str(arg) for arg in args)
-    logger.info(msg)  # we log to whichever handlers are active
-    _original_print(*args, **kwargs)
-
-def set_run_logger(dataset_tag: str, path: str, gamma_type: str, epsilon_tag: str) -> str:
-    """we switch the file handler as soon as a run starts"""
-    global current_run_handler
-    if current_run_handler:  # we remove previous handler cleanly
-        logger.removeHandler(current_run_handler)
-        current_run_handler.close()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")  # we stamp each log file
-    log_dir = os.path.join(LOG_ROOT, dataset_tag)
-    os.makedirs(log_dir, exist_ok=True)  # we ensure subdirectory exists
-    log_name = f"{timestamp}_{path}_{gamma_type}_{epsilon_tag}.log"
-    log_path = os.path.join(log_dir, log_name)
-    handler = logging.FileHandler(log_path)
-    handler.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
-    logger.addHandler(handler)
-    current_run_handler = handler
-    logger.info(f"run log started for path={path}, gamma_type={gamma_type}, epsilon={epsilon_tag}")
-    return log_path
+RESULTS_ROOT = os.path.join("vresults", "cifarpatchedinterpolants")
+DATASET_NAME = "cifar10_dog"
+EPSILON_TAG = "eps-none"
 
 if torch.cuda.is_available():
     print('cuda available, setting default tensor residence to gpu')
@@ -267,7 +219,7 @@ def ensure_lsun_bedroom(lsun_root: str, max_retries: int = 3, timeout: int = 300
 # we load celebA dataset
 print(f"[verbose] === starting dataset loading process ===")  # we log start
 transform = transforms.Compose([
-    transforms.Resize(IMAGE_SIZE),  # we resize celebA images to target shape
+    transforms.Resize((32, 32)),  # we resize celebA images to 32x32
     transforms.ToTensor(),  # we convert images to tensors
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))  # we normalize channels
 ])
@@ -279,7 +231,7 @@ print(f"[verbose] max_samples: {max_samples}")  # we log max samples
 celebA_root = "../../data/celeba"  # we set celebA root directory
 print(f"[verbose] loading celebA dataset...")  # we log celebA load
 print(f"[verbose] celebA root: {os.path.abspath(celebA_root)}")  # we log celebA root
-print(f"[verbose] using transform: Resize({IMAGE_HEIGHT}x{IMAGE_WIDTH}) -> ToTensor -> Normalize")  # we log transform
+print(f"[verbose] using transform: Resize(32x32) -> ToTensor -> Normalize")  # we log transform
 
 # we check if gdown is needed and try to install it
 try:  # we try to import gdown
@@ -365,11 +317,11 @@ def get_cifar_batch(bs):
 # we create masking function for patches
 def create_patch_mask(bs, patch_size=6, num_patches=4):
     """we create random patch masks, 1 for visible pixels, 0 for masked patches"""
-    mask = torch.ones(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we initialize mask for rgb images
+    mask = torch.ones(bs, 3, 32, 32)
     for i in range(bs):
         for _ in range(num_patches):
-            x = torch.randint(0, max(1, IMAGE_HEIGHT - patch_size + 1), (1,)).item()  # we sample patch row
-            y = torch.randint(0, max(1, IMAGE_WIDTH - patch_size + 1), (1,)).item()  # we sample patch column
+            x = torch.randint(0, 32 - patch_size, (1,)).item()
+            y = torch.randint(0, 32 - patch_size, (1,)).item()
             mask[i, :, x:x+patch_size, y:y+patch_size] = 0  # we mask the patch
     return mask.to(itf.util.get_torch_device())
 
@@ -511,9 +463,9 @@ class EtaNetwork(nn.Module):
         self.unet = unet  # we store underlying unet
     
     def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """we expect x of shape [bs, num_channels*image_height*image_width] and scalar or batched t"""  # we describe forward
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
-        x_img = x.reshape(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape flat image to 4d tensor
+        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
         out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
@@ -525,9 +477,9 @@ class VelocityNetwork(nn.Module):
         self.unet = unet  # we store underlying unet
     
     def forward(self, x: torch.Tensor, t: torch.Tensor) -> torch.Tensor:
-        """we expect x of shape [bs, num_channels*image_height*image_width] and scalar or batched t"""  # we describe forward
+        """we expect x of shape [bs, 3*32*32] and scalar or batched t"""  # we describe forward
         bs = x.shape[0]  # we get batch size
-        x_img = x.reshape(bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape flat image to 4d tensor
+        x_img = x.reshape(bs, 3, 32, 32)  # we reshape flat image to 4d tensor
         out = self.unet(x_img, t)  # we run time-conditioned unet
         return out.reshape(bs, -1)  # we flatten output
 
@@ -548,10 +500,10 @@ def train_step(
     opt_eta.zero_grad()
     
     # we construct batch of real images
-    x1s_img = get_cifar_batch(bs)  # we get [bs, num_channels, image_height, image_width]
+    x1s_img = get_cifar_batch(bs)  # we get [bs, 3, 32, 32]
     
     # we create masks
-    masks = create_patch_mask(bs, patch_size=patch_size, num_patches=num_patches)  # we get [bs, num_channels, image_height, image_width]
+    masks = create_patch_mask(bs, patch_size=patch_size, num_patches=num_patches)  # we get [bs, 3, 32, 32]
     
     # we create masked images + noise in masked regions as starting point
     noise = torch.randn_like(x1s_img) * (1 - masks)  # we add noise only in masked regions
@@ -603,15 +555,13 @@ def make_plots(
     num_patches: int,
     n_params_b: int = None,
     n_params_eta: int = None,
-    image_size: tuple = IMAGE_SIZE,
+    image_size: tuple = (32, 32),
     batch_size: int = None,
     base_lr: float = None,
     metrics_freq: int = 100,
     dataset_name: str = DATASET_NAME,
     epsilon_tag: str = EPSILON_TAG,
-    epsilon_value: Optional[float] = None,
-    *,
-    run_dir: str,
+    results_root: str = RESULTS_ROOT,
 ):
     """we make plots to visualize reconstruction results"""
     print(f"\nepoch: {counter}")
@@ -658,7 +608,7 @@ def make_plots(
         # we try batch integration first, fall back to one-by-one if memory error
         try:  # we try batch integration
             xfs_pflow, _ = pflow.rollout(x0s)  # we integrate batch
-            xf_pflow = xfs_pflow[-1].reshape(vis_bs, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape result
+            xf_pflow = xfs_pflow[-1].reshape(vis_bs, 3, 32, 32)  # we reshape result
             print(f"[verbose] integration complete (batch mode)")  # we log completion
         except torch.cuda.OutOfMemoryError:  # we catch memory error
             print(f"[verbose] batch integration failed, processing one image at a time...")  # we log fallback
@@ -666,7 +616,7 @@ def make_plots(
             for i in range(vis_bs):  # we process each image separately
                 x0s_single = x0s[i:i+1]  # we get single image
                 xfs_single, _ = pflow.rollout(x0s_single)  # we integrate single image
-                xf_single = xfs_single[-1].reshape(1, NUM_CHANNELS, IMAGE_HEIGHT, IMAGE_WIDTH)  # we reshape single result
+                xf_single = xfs_single[-1].reshape(1, 3, 32, 32)  # we reshape single result
                 xf_pflow_list.append(xf_single)  # we append to list
                 torch.cuda.empty_cache()  # we clear cache after each image
             xf_pflow = torch.cat(xf_pflow_list, dim=0)  # we concatenate results
@@ -709,6 +659,8 @@ def make_plots(
     
     plt.suptitle(f'cifar patch reconstruction - epoch {counter}', fontsize=14, y=1.02)
     plt.tight_layout()
+    dataset_tag = f"{dataset_name}_patch{patch_size}x{patch_size}_np{num_patches}_{epsilon_tag}"
+    run_dir = os.path.join(results_root, dataset_tag, f"{path_name}_{gamma_name}")
     os.makedirs(run_dir, exist_ok=True)
     recon_path = os.path.join(run_dir, f"cifar_reconstruction_epoch_{counter}.png")
     plt.savefig(recon_path, dpi=150, bbox_inches="tight")
@@ -755,7 +707,7 @@ def make_plots(
     
     patch_str = f"patch={patch_size}x{patch_size}"
     dataset_str = dataset_name
-    epsilon_str = f"eps={epsilon_value}" if epsilon_value is not None else epsilon_tag
+    epsilon_str = epsilon_tag
     # we build full title
     title_parts = [params_str, f"img={img_size_str}", patch_str, dataset_str, epsilon_str, batch_str, lr_str]  # we collect title parts
     title_parts = [p for p in title_parts if p]  # we filter empty parts
@@ -776,7 +728,7 @@ def make_plots(
 if __name__ == "__main__":
     # we set hyperparameters
     base_lr = 1e-4  # we set base learning rate
-    batch_size = 128  # we set batch size
+    batch_size = 32  # we set batch size
     n_epochs = 5000  # we set number of epochs
     patch_size = 6  # we set patch size
     num_patches = 4  # we set number of patches
@@ -794,123 +746,115 @@ if __name__ == "__main__":
     paths = ["linear", "trig", "encoding-decoding"]  # we define two-sided interpolant paths
     gamma_types = ["bsquared", "sinesquared", "sigmoid"]  # we define non-gaussian gamma schedules
     
-    for epsilon_value, epsilon_tag in EPSILON_CONFIGS:
-        print(f"\nusing epsilon: {epsilon_value} ({epsilon_tag})")  # we log current epsilon configuration
-        for path in paths:
-            for gamma_type in gamma_types:
-                print(f"\nusing interpolant: path={path}, gamma_type={gamma_type}, epsilon={epsilon_tag}")  # we log current interpolant config
-
-                interpolant = stochastic_interpolant.Interpolant(path=path, gamma_type=gamma_type)  # we create interpolant
-                interpolant.gamma_type = gamma_type  # we store gamma type on interpolant for logging
-                dataset_tag = f"{DATASET_NAME}_patch{patch_size}x{patch_size}_np{num_patches}_{epsilon_tag}"
-                run_dir = os.path.join(RESULTS_ROOT, dataset_tag, f"{path}_{gamma_type}")
-                log_path = set_run_logger(dataset_tag, path, gamma_type, epsilon_tag)
-                print(f"log file: {log_path}")  # we log which file is being used
-
-                # we define loss functions for two-sided stochastic interpolant
-                loss_fn_b = stochastic_interpolant.make_loss(
-                    method="shared", interpolant=interpolant, loss_type="b"
-                )
-                loss_fn_eta = stochastic_interpolant.make_loss(
-                    method="shared", interpolant=interpolant, loss_type="eta"
-                )
-
-                # we create networks
-                print("\ncreating u-net architectures...")  # we notify network instantiation
-                unet_b = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for b
-                unet_eta = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for eta
-
-                b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())  # we move b network to device
-                eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())  # we move eta network to device
-
-                # we count parameters
-                n_params_b = sum(p.numel() for p in b.parameters() if p.requires_grad)  # we count trainable params of b
-                n_params_eta = sum(p.numel() for p in eta.parameters() if p.requires_grad)  # we count trainable params of eta
-                print(f"b network parameters: {n_params_b:,}")  # we print number of parameters of b
-                print(f"eta network parameters: {n_params_eta:,}")  # we print number of parameters of eta
-
-                # we create optimizers and schedulers
-                opt_b = torch.optim.Adam(b.parameters(), lr=base_lr)  # we create optimizer for b
-                opt_eta = torch.optim.Adam(eta.parameters(), lr=base_lr)  # we create optimizer for eta
-                sched_b = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    opt_b, T_max=n_epochs, eta_min=base_lr * 0.01
-                )  # we create lr scheduler for b
-                sched_eta = torch.optim.lr_scheduler.CosineAnnealingLR(
-                    opt_eta, T_max=n_epochs, eta_min=base_lr * 0.01
-                )  # we create lr scheduler for eta
-
-                # we initialize data dictionary
-                data_dict = {
-                    "losses": [],
-                    "b_losses": [],
-                    "eta_losses": [],
-                    "b_grads": [],
-                    "eta_grads": [],
-                    "lrs": [],
-                }  # we store training metrics
-
-                # we train the model for this configuration
-                print("\nstarting training...\n")  # we announce training start
-                counter = 1  # we initialize iteration counter
-                for epoch in range(n_epochs):
-                    loss, b_loss, eta_loss, b_grad, eta_grad = train_step(
-                        batch_size, interpolant, opt_b, opt_eta, sched_b, sched_eta, patch_size, num_patches
-                    )  # we perform one training step
-
-                    # we log metrics
-                    if (counter - 1) % metrics_freq == 0:
-                        data_dict["losses"].append(grab(loss).item())  # we log total loss
-                        data_dict["b_losses"].append(grab(b_loss).item())  # we log b loss
-                        data_dict["eta_losses"].append(grab(eta_loss).item())  # we log eta loss
-                        data_dict["b_grads"].append(grab(b_grad).item())  # we log gradient norm of b
-                        data_dict["eta_grads"].append(grab(eta_grad).item())  # we log gradient norm of eta
-                        data_dict["lrs"].append(opt_b.param_groups[0]["lr"])  # we log learning rate
-
-                        print(
-                            f"[path={path} | gamma_type={gamma_type} | eps={epsilon_tag}] epoch {counter}: "
-                            f"loss={grab(loss).item():.4f}, "
-                            f"b_loss={grab(b_loss).item():.4f}, "
-                            f"eta_loss={grab(eta_loss).item():.4f}"
-                        )  # we print training status
-
-                    # we make plots and save checkpoints
-                    if (counter - 1) % plot_freq == 0:
-                        make_plots(
-                            b, eta, interpolant, counter, data_dict, patch_size, num_patches,
-                            n_params_b=n_params_b, n_params_eta=n_params_eta,
-                            image_size=IMAGE_SIZE, batch_size=batch_size, base_lr=base_lr,
-                            metrics_freq=metrics_freq, dataset_name=DATASET_NAME,
-                            epsilon_tag=epsilon_tag, epsilon_value=epsilon_value,
-                            run_dir=run_dir
-                        )  # we visualize results with all parameters
-
-                        ckpt_dir = os.path.join(RESULTS_ROOT, dataset_tag, "checkpoints")  # we define directory for checkpoints
-                        os.makedirs(ckpt_dir, exist_ok=True)  # we ensure checkpoint directory exists
-                        ckpt_name = os.path.join(
-                            ckpt_dir,
-                            f"cifar_checkpoint_{path}_{gamma_type}_epoch_{counter}.pt",
-                        )  # we build checkpoint filename
-                        torch.save(
-                            {
-                                "epoch": counter,
-                                "b_state_dict": b.state_dict(),
-                                "eta_state_dict": eta.state_dict(),
-                                "opt_b_state_dict": opt_b.state_dict(),
-                                "opt_eta_state_dict": opt_eta.state_dict(),
-                                "data_dict": data_dict,
-                                "class": "dog",
-                                "class_id": 5,
-                                "path": path,
-                                "gamma_type": gamma_type,
-                                "epsilon": epsilon_value,
-                                "epsilon_tag": epsilon_tag,
-                            },
-                            ckpt_name,
-                        )  # we save checkpoint
-                        print(
-                            f"saved checkpoint at epoch {counter} for path={path}, gamma_type={gamma_type}, epsilon={epsilon_tag}"
-                        )  # we log checkpoint saving
-
-                    counter += 1  # we increment iteration counter
-
-                print(f"\ntraining complete for path={path}, gamma_type={gamma_type}\n")  # we mark configuration as finished
+    for path in paths:
+        for gamma_type in gamma_types:
+            print(f"\nusing interpolant: path={path}, gamma_type={gamma_type}")  # we log current interpolant config
+            
+            interpolant = stochastic_interpolant.Interpolant(path=path, gamma_type=gamma_type)  # we create interpolant
+            interpolant.gamma_type = gamma_type  # we store gamma type on interpolant for logging
+            
+            # we define loss functions for two-sided stochastic interpolant
+            loss_fn_b = stochastic_interpolant.make_loss(
+                method="shared", interpolant=interpolant, loss_type="b"
+            )
+            loss_fn_eta = stochastic_interpolant.make_loss(
+                method="shared", interpolant=interpolant, loss_type="eta"
+            )
+            
+            # we create networks
+            print("\ncreating u-net architectures...")  # we notify network instantiation
+            unet_b = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for b
+            unet_eta = UNetDenoiser(in_channels=3, out_channels=3, base_channels=64)  # we create time-conditioned unet for eta
+            
+            b = VelocityNetwork(unet_b).to(itf.util.get_torch_device())  # we move b network to device
+            eta = EtaNetwork(unet_eta).to(itf.util.get_torch_device())  # we move eta network to device
+            
+            # we count parameters
+            n_params_b = sum(p.numel() for p in b.parameters() if p.requires_grad)  # we count trainable params of b
+            n_params_eta = sum(p.numel() for p in eta.parameters() if p.requires_grad)  # we count trainable params of eta
+            print(f"b network parameters: {n_params_b:,}")  # we print number of parameters of b
+            print(f"eta network parameters: {n_params_eta:,}")  # we print number of parameters of eta
+            
+            # we create optimizers and schedulers
+            opt_b = torch.optim.Adam(b.parameters(), lr=base_lr)  # we create optimizer for b
+            opt_eta = torch.optim.Adam(eta.parameters(), lr=base_lr)  # we create optimizer for eta
+            sched_b = torch.optim.lr_scheduler.CosineAnnealingLR(
+                opt_b, T_max=n_epochs, eta_min=base_lr * 0.01
+            )  # we create lr scheduler for b
+            sched_eta = torch.optim.lr_scheduler.CosineAnnealingLR(
+                opt_eta, T_max=n_epochs, eta_min=base_lr * 0.01
+            )  # we create lr scheduler for eta
+            
+            # we initialize data dictionary
+            data_dict = {
+                "losses": [],
+                "b_losses": [],
+                "eta_losses": [],
+                "b_grads": [],
+                "eta_grads": [],
+                "lrs": [],
+            }  # we store training metrics
+            
+            # we train the model for this configuration
+            print("\nstarting training...\n")  # we announce training start
+            counter = 1  # we initialize iteration counter
+            for epoch in range(n_epochs):
+                loss, b_loss, eta_loss, b_grad, eta_grad = train_step(
+                    batch_size, interpolant, opt_b, opt_eta, sched_b, sched_eta, patch_size, num_patches
+                )  # we perform one training step
+                
+                # we log metrics
+                if (counter - 1) % metrics_freq == 0:
+                    data_dict["losses"].append(grab(loss).item())  # we log total loss
+                    data_dict["b_losses"].append(grab(b_loss).item())  # we log b loss
+                    data_dict["eta_losses"].append(grab(eta_loss).item())  # we log eta loss
+                    data_dict["b_grads"].append(grab(b_grad).item())  # we log gradient norm of b
+                    data_dict["eta_grads"].append(grab(eta_grad).item())  # we log gradient norm of eta
+                    data_dict["lrs"].append(opt_b.param_groups[0]["lr"])  # we log learning rate
+                    
+                    print(
+                        f"[path={path} | gamma_type={gamma_type}] epoch {counter}: "
+                        f"loss={grab(loss).item():.4f}, "
+                        f"b_loss={grab(b_loss).item():.4f}, "
+                        f"eta_loss={grab(eta_loss).item():.4f}"
+                    )  # we print training status
+                
+                # we make plots and save checkpoints
+                if (counter - 1) % plot_freq == 0:
+                    make_plots(
+                        b, eta, interpolant, counter, data_dict, patch_size, num_patches,
+                        n_params_b=n_params_b, n_params_eta=n_params_eta,
+                        image_size=(32, 32), batch_size=batch_size, base_lr=base_lr,
+                        metrics_freq=metrics_freq, dataset_name=DATASET_NAME,
+                        epsilon_tag=EPSILON_TAG
+                    )  # we visualize results with all parameters
+                    
+                    dataset_tag = f"{DATASET_NAME}_patch{patch_size}x{patch_size}_np{num_patches}_{EPSILON_TAG}"
+                    ckpt_dir = os.path.join(RESULTS_ROOT, dataset_tag, "checkpoints")  # we define directory for checkpoints
+                    os.makedirs(ckpt_dir, exist_ok=True)  # we ensure checkpoint directory exists
+                    ckpt_name = os.path.join(
+                        ckpt_dir,
+                        f"cifar_checkpoint_{path}_{gamma_type}_epoch_{counter}.pt",
+                    )  # we build checkpoint filename
+                    torch.save(
+                        {
+                            "epoch": counter,
+                            "b_state_dict": b.state_dict(),
+                            "eta_state_dict": eta.state_dict(),
+                            "opt_b_state_dict": opt_b.state_dict(),
+                            "opt_eta_state_dict": opt_eta.state_dict(),
+                            "data_dict": data_dict,
+                            "class": "dog",
+                            "class_id": 5,
+                            "path": path,
+                            "gamma_type": gamma_type,
+                        },
+                        ckpt_name,
+                    )  # we save checkpoint
+                    print(
+                        f"saved checkpoint at epoch {counter} for path={path}, gamma_type={gamma_type}"
+                    )  # we log checkpoint saving
+                
+                counter += 1  # we increment iteration counter
+            
+            print(f"\ntraining complete for path={path}, gamma_type={gamma_type}\n")  # we mark configuration as finished

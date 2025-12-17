@@ -1,0 +1,99 @@
+2025-12-17 23:21:54,838 cuda available, setting default tensor residence to gpu
+2025-12-17 23:21:54,838 cuda
+2025-12-17 23:21:54,856 torch version: 2.9.0+cu128
+2025-12-17 23:21:54,908 [verbose] === starting dataset loading process ===
+2025-12-17 23:21:54,925 [verbose] max_samples: None
+2025-12-17 23:21:54,941 [verbose] loading celebA dataset...
+2025-12-17 23:21:54,941 [verbose] celebA root: /home/janis/4A/probgraph/probgraph/data/celeba
+2025-12-17 23:21:54,941 [verbose] using transform: Resize(64x64) -> ToTensor -> Normalize
+2025-12-17 23:21:54,958 [verbose] gdown not found, attempting to install...
+2025-12-17 23:21:54,979 [verbose] ✗ failed to install gdown: Command '['/home/janis/4A/probgraph/probgraph/.venv/bin/python', '-m', 'pip', 'install', 'gdown', '--quiet']' returned non-zero exit status 1.
+2025-12-17 23:21:54,979 [verbose] will skip celebA and use cifar10 directly
+2025-12-17 23:21:54,987 [verbose] ✗ error loading celebA: To download files from GDrive, 'gdown' is required. You can install it with 'pip install gdown'.
+2025-12-17 23:21:54,987 [verbose] error type: RuntimeError
+2025-12-17 23:21:54,988 [verbose] full traceback:
+2025-12-17 23:21:54,990 
+warning: celebA loading failed, falling back to cifar10 dog class
+2025-12-17 23:21:54,990 [verbose] loading cifar10 dataset...
+2025-12-17 23:21:54,990 [verbose] cifar10 root: /home/janis/4A/probgraph/probgraph/data/cifar10
+2025-12-17 23:21:55,766 [verbose] ✓ cifar10 loaded, total images: 50000
+2025-12-17 23:21:55,766 [verbose] filtering for class 5 (dog)...
+2025-12-17 23:21:55,768 [verbose] ✓ found 5000 dog images
+2025-12-17 23:21:55,768 using cifar10 dog class: 5000 images
+2025-12-17 23:21:55,768 [verbose] created subset with 5000 images
+2025-12-17 23:21:55,773 [verbose] === dataset loading complete ===
+2025-12-17 23:21:55,774 [verbose] final trainset size: 5000 images
+2025-12-17 23:21:55,774 [verbose] device: cuda
+2025-12-17 23:21:55,960 
+hyperparameters:
+2025-12-17 23:21:55,960   class: dog (cifar10 class 5)
+2025-12-17 23:21:55,960   batch_size: 128
+2025-12-17 23:21:55,960   learning_rate: 0.0001
+2025-12-17 23:21:55,960   n_epochs: 5000
+2025-12-17 23:21:55,960   patch_size: 6
+2025-12-17 23:21:55,960   num_patches: 4
+2025-12-17 23:21:55,960 
+using epsilon: 0.5 (eps-0.5)
+2025-12-17 23:21:55,960 
+using interpolant: path=linear, gamma_type=bsquared, epsilon=eps-0.5
+2025-12-17 23:21:55,961 run log started for path=linear, gamma_type=bsquared, epsilon=eps-0.5
+2025-12-17 23:21:55,961 log file: logs/cifar10_dog_patch6x6_np4_eps-0.5/20251217_232155_linear_bsquared_eps-0.5.log
+2025-12-17 23:21:55,961 
+creating u-net architectures...
+2025-12-17 23:21:56,404 b network parameters: 9,402,371
+2025-12-17 23:21:56,404 eta network parameters: 9,402,371
+2025-12-17 23:21:56,405 
+starting training...
+
+2025-12-17 23:25:04,256 cuda available, setting default tensor residence to gpu
+2025-12-17 23:25:04,262 cuda
+2025-12-17 23:25:04,297 torch version: 2.9.0+cu128
+2025-12-17 23:25:04,434 [verbose] === starting dataset loading process ===
+2025-12-17 23:25:04,455 [verbose] max_samples: None
+2025-12-17 23:25:04,474 [verbose] loading celebA dataset...
+2025-12-17 23:25:04,475 [verbose] celebA root: /home/janis/4A/probgraph/probgraph/data/celeba
+2025-12-17 23:25:04,475 [verbose] using transform: Resize(32x32) -> ToTensor -> Normalize
+2025-12-17 23:25:04,498 [verbose] gdown not found, attempting to install...
+2025-12-17 23:25:04,526 [verbose] ✗ failed to install gdown: Command '['/home/janis/4A/probgraph/probgraph/.venv/bin/python', '-m', 'pip', 'install', 'gdown', '--quiet']' returned non-zero exit status 1.
+2025-12-17 23:25:04,526 [verbose] will skip celebA and use cifar10 directly
+2025-12-17 23:25:04,556 [verbose] ✗ error loading celebA: To download files from GDrive, 'gdown' is required. You can install it with 'pip install gdown'.
+2025-12-17 23:25:04,556 [verbose] error type: RuntimeError
+2025-12-17 23:25:04,557 [verbose] full traceback:
+2025-12-17 23:25:04,560 
+warning: celebA loading failed, falling back to cifar10 dog class
+2025-12-17 23:25:04,561 [verbose] loading cifar10 dataset...
+2025-12-17 23:25:04,561 [verbose] cifar10 root: /home/janis/4A/probgraph/probgraph/data/cifar10
+2025-12-17 23:25:05,253 [verbose] ✓ cifar10 loaded, total images: 50000
+2025-12-17 23:25:05,254 [verbose] filtering for class 5 (dog)...
+2025-12-17 23:25:05,256 [verbose] ✓ found 5000 dog images
+2025-12-17 23:25:05,256 using cifar10 dog class: 5000 images
+2025-12-17 23:25:05,266 [verbose] created subset with 5000 images
+2025-12-17 23:25:05,273 [verbose] === dataset loading complete ===
+2025-12-17 23:25:05,274 [verbose] final trainset size: 5000 images
+2025-12-17 23:25:05,274 [verbose] device: cuda
+2025-12-17 23:25:05,466 
+hyperparameters:
+2025-12-17 23:25:05,467   class: dog (cifar10 class 5)
+2025-12-17 23:25:05,467   batch_size: 32
+2025-12-17 23:25:05,467   learning_rate: 0.0001
+2025-12-17 23:25:05,467   n_epochs: 5000
+2025-12-17 23:25:05,467   patch_size: 6
+2025-12-17 23:25:05,467   num_patches: 4
+2025-12-17 23:25:05,467 
+using interpolant: path=linear, gamma_type=bsquared
+2025-12-17 23:25:05,469 
+creating u-net architectures...
+2025-12-17 23:25:05,512 b network parameters: 9,402,371
+2025-12-17 23:25:05,512 eta network parameters: 9,402,371
+2025-12-17 23:25:05,515 
+starting training...
+
+2025-12-17 23:25:07,245 [path=linear | gamma_type=bsquared] epoch 1: loss=401.5048, b_loss=275.7538, eta_loss=125.7510
+2025-12-17 23:25:07,245 
+epoch: 1
+2025-12-17 23:25:07,264 [verbose] cleared cuda cache, allocated: 0.39 GB, reserved: 0.42 GB, total: 8.00 GB
+2025-12-17 23:25:07,264 [verbose] using visualization batch size: 4
+2025-12-17 23:25:07,269 [verbose] starting probability flow integration with rk4 method (sample_only=True to save memory)...
+2025-12-17 23:25:07,454 [verbose] integration complete (batch mode)
+2025-12-17 23:25:08,207 [verbose] models set back to train mode
+2025-12-17 23:25:08,740 saved checkpoint at epoch 1 for path=linear, gamma_type=bsquared
